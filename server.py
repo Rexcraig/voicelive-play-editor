@@ -1,5 +1,7 @@
 """Local server for the VoiceLive Play editor: serves the UI and talks to the box over USB MIDI."""
+import hashlib
 import json
+import shutil
 import pathlib
 import struct
 import sys
@@ -20,11 +22,53 @@ CAPACITY = 500  # VoiceSupport asks for slots 1..500; empty ones answer 34 02 00
 BACKUPS = HERE / "backups"  # a .syx copy of every preset before the editor replaces it
 SETS = HERE / "sets.json"  # the singer's saved set lists
 SAVES = HERE / "saves.json"  # slots this editor has written since VoiceSupport's last sync
+# Off-machine copy of the singer's data (sets, save log, preset backups). Skipped when the drive isn't mounted.
+DATA_BACKUP = pathlib.Path("/Volumes/Dock1/VoiceLivePlay/data")
+KEEP_SET_VERSIONS = 100
 lock = threading.Lock()
+backup_timer = None
 
 
 _defaults = json.loads((HERE / "defaults.json").read_text())
 DEFAULTS, TAGS = _defaults["params"], _defaults["tags"]
+
+
+def backup_data():
+    """Mirror user data to DATA_BACKUP. Preset backups are only ever added, never deleted; each distinct
+    version of sets.json is kept (newest KEEP_SET_VERSIONS), so a bad edit or deleted set can be recovered."""
+    if not DATA_BACKUP.parent.is_dir():
+        return
+    try:
+        history = DATA_BACKUP / "sets-history"
+        history.mkdir(parents=True, exist_ok=True)
+        if SETS.exists():
+            data = SETS.read_bytes()
+            digest = hashlib.sha256(data).hexdigest()[:12]
+            if not any(history.glob(f"*_{digest}.json")):
+                (history / f"{time.strftime('%Y-%m-%d_%H%M%S')}_{digest}.json").write_bytes(data)
+            for old in sorted(history.glob("*.json"))[:-KEEP_SET_VERSIONS]:
+                old.unlink()
+            shutil.copy2(SETS, DATA_BACKUP / "sets.json")
+        if SAVES.exists():
+            shutil.copy2(SAVES, DATA_BACKUP / "saves.json")
+        if BACKUPS.is_dir():
+            for src in BACKUPS.rglob("*.syx"):
+                dst = DATA_BACKUP / "preset-backups" / src.relative_to(BACKUPS)
+                if not dst.exists():
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+    except OSError as e:
+        print(f"Data backup to {DATA_BACKUP} failed: {e}", flush=True)
+
+
+def schedule_backup():
+    """Back up a few seconds after the last change, so a burst of edits makes one copy."""
+    global backup_timer
+    if backup_timer:
+        backup_timer.cancel()
+    backup_timer = threading.Timer(5, backup_data)
+    backup_timer.daemon = False
+    backup_timer.start()
 
 
 def voicesupport_sync():
@@ -199,6 +243,7 @@ def record_save(slot, name, params, tags):
     saves = json.loads(SAVES.read_text()) if SAVES.exists() else {}
     saves[str(slot)] = {"name": name, "params": params, "tags": tags, "time": time.time()}
     SAVES.write_text(json.dumps(saves))
+    schedule_backup()
 
 
 def midi_out():
@@ -310,6 +355,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200 if ok else 503, {"ok": ok, "message": message})
         if self.path == "/api/sets":
             SETS.write_text(json.dumps({"sets": body.get("sets", [])}, indent=1))
+            schedule_backup()
             return self._send(200, {"ok": True})
         if self.path == "/api/pedal/range":
             start, count = int(body.get("start", 1)), int(body.get("count", 0))
@@ -376,4 +422,5 @@ class Handler(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8730
     print(f"VoiceLive Play editor on http://localhost:{port}")
+    backup_data()  # catch up on anything changed while the drive was unplugged
     ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
