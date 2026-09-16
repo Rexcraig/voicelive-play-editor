@@ -1,0 +1,13 @@
+# Python
+.venv/
+__pycache__/
+
+# Runtime data written by the editor (personal to each Mac, not code)
+pedal_cache.json
+saves.json
+sets.json
+backups/
+
+# Scratch output
+tools/vs_stdout.txt
+.DS_Store

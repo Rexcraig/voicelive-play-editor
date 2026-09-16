@@ -1,0 +1,20 @@
+VoiceLive Play Editor (test version)
+
+Start
+1. Plug the VoiceLive Play into this Mac with USB. Quit VoiceSupport if it's open.
+2. Double-click "Start Editor".
+   The first time, macOS may say it can't check the file. If so: right-click "Start Editor",
+   choose Open, then Open again. The first start also installs what the editor needs (about a minute).
+3. The editor opens in your web browser. Keep the Terminal window open while you use it.
+
+Tabs
+- Editor: shape a preset. The pedal plays every change straight away; it isn't kept until you save it.
+  "Save to pedal" keeps it in a numbered preset.
+- On the pedal: everything saved on the pedal. "Open in editor" to tweak one.
+- Sets: build a set list, song by song, then "Load onto pedal" to put it in order on the pedal.
+
+Safety
+Whenever the editor replaces a preset, it first saves a copy in the "backups" folder next to this file.
+To get one back: Files > Import presets, pick the backup, then Save to pedal.
+
+Tell Will anything that's confusing, missing, or wrong.

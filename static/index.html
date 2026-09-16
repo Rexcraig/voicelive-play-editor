@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoiceLive Play Editor</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="bar">
+  <div class="brand">
+    <span class="mark"></span>
+    <div>
+      <h1>VoiceLive Play</h1>
+      <p>Preset editor</p>
+    </div>
+  </div>
+
+  <label class="name-field">
+    <span>Preset name</span>
+    <input id="preset-name" maxlength="15" value="NEW PRESET" spellcheck="false">
+  </label>
+
+  <div class="bar-right">
+    <div class="status" id="status" title="Connection to the pedal">
+      <span class="dot"></span><span id="status-text">checking…</span>
+    </div>
+    <details class="menu" id="files-menu">
+      <summary>Files</summary>
+      <div class="menu-items">
+        <button id="open">Import presets</button>
+        <button id="export">Export preset</button>
+      </div>
+    </details>
+    <input type="file" id="open-file" accept=".syx" hidden>
+    <button class="primary" id="save">Save to pedal</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" data-tab="editor" aria-selected="true">Editor</button>
+  <button role="tab" data-tab="pedal" aria-selected="false">On the pedal</button>
+  <button role="tab" data-tab="sets" aria-selected="false">Sets</button>
+</nav>
+
+<main id="blocks"></main>
+
+<section id="pedal" hidden>
+  <div class="notice" id="sync-notice" hidden>
+    <div>
+      <strong id="sync-title"></strong>
+      <p id="sync-detail"></p>
+    </div>
+    <button class="ghost" id="sync-refresh">Read pedal</button>
+  </div>
+  <div class="pedal-head">
+    <p id="pedal-source"></p>
+    <input id="pedal-search" type="search" placeholder="Search name or slot" spellcheck="false">
+  </div>
+  <ol id="pedal-list"></ol>
+</section>
+
+<section id="sets" hidden>
+  <aside class="sets-side">
+    <div class="side-head">
+      <h2>Sets</h2>
+      <button class="ghost" id="set-new">New set</button>
+    </div>
+    <ul id="set-list"></ul>
+  </aside>
+  <div id="set-editor"></div>
+</section>
+
+<footer>
+  <p>Every change plays on the pedal straight away but isn't kept until you <strong>Save to pedal</strong>. Switching presets on the pedal brings back what was saved.</p>
+  <p id="hint"></p>
+</footer>
+<dialog id="save-dialog">
+  <form method="dialog">
+    <h2>Save to the pedal</h2>
+    <label class="slot-field"><span>Preset number</span><input id="save-slot" type="number" min="1" required></label>
+    <button type="button" class="link" id="save-empty"></button>
+    <p id="save-current"></p>
+    <p class="warn" id="save-warn">This replaces that preset. A backup copy is saved first, and you can bring it back with Files › Import presets.</p>
+    <div class="actions">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" id="save-confirm" value="save">Replace preset</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="pick-dialog">
+  <form method="dialog">
+    <h2 id="pick-title"></h2>
+    <p>Choose a preset to open in the editor.</p>
+    <ol id="pick-list"></ol>
+    <div class="actions"><button value="cancel">Cancel</button></div>
+  </form>
+</dialog>
+<dialog id="picker">
+  <form method="dialog">
+    <h2 id="picker-title">Add presets</h2>
+    <div class="picker-bar">
+      <input id="picker-search" type="search" placeholder="Search name or slot" spellcheck="false">
+      <button type="button" class="ghost" id="picker-import">Import from file</button>
+      <input type="file" id="picker-file" accept=".syx" hidden>
+    </div>
+    <p id="picker-source"></p>
+    <ol id="picker-list"></ol>
+    <div class="actions"><button value="cancel">Done</button></div>
+  </form>
+</dialog>
+
+<dialog id="load-dialog">
+  <form method="dialog">
+    <h2 id="load-title">Load set onto the pedal</h2>
+    <label class="slot-field"><span>Start at preset</span><input id="load-start" type="number" min="1"></label>
+    <p id="load-summary"></p>
+    <div class="plan-wrap"><table id="load-plan"></table></div>
+    <p id="load-result"></p>
+    <div class="actions">
+      <button value="cancel" id="load-cancel">Cancel</button>
+      <button type="button" class="primary" id="load-go" disabled>Load onto pedal</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="drop-hint" hidden>Drop a preset file to import it</div>
+<script src="/app.js"></script>
+<script src="/sets.js"></script>
+</body>
+</html>
