@@ -11,7 +11,7 @@ import sys
 import types
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
-from tch import build_syx, parse_syx  # noqa: E402
+from tch import build_syx, parse_syx, pedal_name  # noqa: E402
 
 HEAD = [0xF0, 0x00, 0x01, 0x38, 0x00, 0x69]
 IDENTITY_REPLY = [0xF0, 0x7E, 0x00, 0x06, 0x02, 0x00, 0x01, 0x38, 0x69, 0x00, 0x00, 0x00, 0x00, 0xF7]
@@ -28,7 +28,7 @@ class FakePedal:
         self.pending = None
         self.drop_ack_for = set()  # simulate a lost ack
         self.corrupt_slots = set()  # simulate a bad write: stores different params
-        self.name_filter = lambda name: name.replace("(", " ").replace(")", " ")  # seen on the real unit
+        self.name_filter = pedal_name  # measured on the real unit
 
     def reply(self, msg):
         for port in self.inputs:

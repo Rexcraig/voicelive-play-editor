@@ -7,6 +7,18 @@ SYX_HEADER = b"\xf0\x00\x01\x38\x00\x69"  # TC-Helicon manufacturer ID + VoiceLi
 PACKET = re.compile(re.escape(SYX_HEADER) + rb"\x21(.)(.{100})(.)\xf7", re.S)
 
 
+# Characters the pedal keeps in a preset name (measured on the unit, fw 1.4.00, 2026-09-16).
+# Lowercase is stored as uppercase; anything else becomes a space; trailing spaces are dropped.
+NAME_CHARS = frozenset(" !$%&'+-./0123456789=?ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+NAME_LENGTH = 15
+
+
+def pedal_name(name, fallback="UNTITLED"):
+    """The name exactly as the pedal will store it."""
+    cleaned = "".join(c if c in NAME_CHARS else " " for c in (name or "").upper()[:NAME_LENGTH]).rstrip()
+    return cleaned or fallback
+
+
 def decode28(b):
     v = (b[0] << 21) | (b[1] << 14) | (b[2] << 7) | b[3]
     return v - (1 << 28) if v & (1 << 27) else v

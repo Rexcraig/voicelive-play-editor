@@ -11,6 +11,15 @@ async function boot() {
   state.spec.params.forEach((p) => (state.values[p.slot] = state.spec.defaults[p.slot]));
   // Start with everything off so the pedal reflects exactly what's on screen.
   state.spec.params.filter((p) => p.kind === "state").forEach((p) => (state.values[p.slot] = 0));
+  const nameInput = $("#preset-name");
+  nameInput.maxLength = state.spec.name_length;
+  nameInput.addEventListener("input", () => {
+    const allowed = new Set(state.spec.name_chars);
+    const pos = nameInput.selectionStart;
+    nameInput.value = [...nameInput.value.toUpperCase()].map((c) => (allowed.has(c) ? c : " ")).join("").slice(0, state.spec.name_length);
+    nameInput.setSelectionRange(pos, pos);
+  });
+  nameInput.addEventListener("change", () => { nameInput.value = nameInput.value.trimEnd(); });
   render();
   poll();
   setInterval(poll, 4000);

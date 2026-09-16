@@ -2,7 +2,7 @@
 import unittest
 
 from helpers import FIXTURES, fixture_presets
-from tch import build_syx, checksum, decode28, encode28, parse_syx
+from tch import build_syx, checksum, decode28, encode28, parse_syx, pedal_name
 
 
 class Codec(unittest.TestCase):
@@ -40,6 +40,14 @@ class Codec(unittest.TestCase):
     def test_non_preset_file_is_rejected(self):
         with self.assertRaisesRegex(ValueError, "No VoiceLive Play presets"):
             parse_syx(b"this is not a preset file")
+
+    def test_names_follow_the_pedals_measured_rule(self):
+        self.assertEqual(pedal_name("Intro (slow)"), "INTRO  SLOW")
+        self.assertEqual(pedal_name("rock & roll!"), "ROCK & ROLL!")
+        self.assertEqual(pedal_name("a_b@c#d:e"), "A B C D E")
+        self.assertEqual(pedal_name("sixteen chars xx"), "SIXTEEN CHARS X")
+        self.assertEqual(pedal_name("((()))"), "UNTITLED")
+        self.assertEqual(pedal_name(" LEAD"), " LEAD")
 
     def test_checksum_is_7bit_sum(self):
         self.assertEqual(checksum(bytes([0x7F, 0x7F, 0x02])), (0x7F + 0x7F + 0x02) & 0x7F)

@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import rtmidi
 
 import spec
-from tch import build_syx, parse_syx, read_presets  # noqa: E402
+from tch import NAME_CHARS, NAME_LENGTH, build_syx, parse_syx, pedal_name, read_presets  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
 VS_DATA = pathlib.Path.home() / "Library/TC-Helicon/VoiceSupport 2/VoiceLive Play/data"
@@ -208,31 +208,42 @@ def refresh_cached_slot(slot, preset):
     PEDAL_CACHE.write_text(json.dumps(cache))
 
 
+def unique_path(path):
+    """`path`, or `path` with " 2", " 3"... added, so an existing backup is never overwritten."""
+    candidate, n = path, 2
+    while candidate.exists():
+        candidate = path.with_name(f"{path.stem} {n}{path.suffix}")
+        n += 1
+    return candidate
+
+
 def safe_filename(text):
     return "".join(c if c.isalnum() or c in " -" else "_" for c in text).strip() or "untitled"
 
 
 def load_set(set_name, start, presets):
     """Write `presets` into slots start, start+1, ... Backs up every preset it replaces; stops at the first failure."""
-    folder = BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} before set {safe_filename(set_name)}"
+    folder = unique_path(BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} before set {safe_filename(set_name)}")
     written, unchanged = [], []
     with lock, PedalLink() as link:
         for offset, p in enumerate(presets):
             slot = start + offset
-            name, tags, params = p["name"].upper()[:15], int(p["tags"]), [int(v) for v in p["params"]]
+            name, tags, params = pedal_name(p["name"]), int(p["tags"]), [int(v) for v in p["params"]]
             old = link.read(slot)
             if old and old["name"] == name and old["tags"] == tags and old["params"] == params:
                 unchanged.append(slot)
                 continue
             if old:
                 folder.mkdir(parents=True, exist_ok=True)
-                (folder / f"preset {slot:03d} {safe_filename(old['name'])}.syx").write_bytes(
+                unique_path(folder / f"preset {slot:03d} {safe_filename(old['name'])}.syx").write_bytes(
                     build_syx(slot, old["name"], old["tags"], old["params"]))
             if not link.write(slot, name, tags, params):
+                done = (f"Presets {start}–{slot - 1} are loaded." if slot - 1 > start
+                        else f"Preset {start} is loaded." if slot - 1 == start else "Nothing else was changed.")
                 return {"ok": False, "written": written, "unchanged": unchanged, "failed": slot,
                         "backups": folder.name if folder.exists() else None,
                         "message": f"Preset {slot} didn't save correctly, so loading stopped there. "
-                                   f"Presets {start}–{slot - 1} are done; check preset {slot} on the pedal."}
+                                   f"{done} Check preset {slot} on the pedal."}
             written.append(slot)
             record_save(slot, name, params, tags)
             refresh_cached_slot(slot, {"slot": slot, "name": name, "params": params, "tags": tags})
@@ -317,7 +328,8 @@ class Handler(BaseHTTPRequestHandler):
             if self.path == "/" + name:
                 return self._send(200, (HERE / "static" / name).read_bytes(), ctype)
         if self.path == "/api/spec":
-            return self._send(200, {**spec.as_json(), "defaults": DEFAULTS})
+            return self._send(200, {**spec.as_json(), "defaults": DEFAULTS,
+                                    "name_chars": "".join(sorted(NAME_CHARS)), "name_length": NAME_LENGTH})
         if self.path == "/api/pedal":
             return self._send(200, pedal_contents())
         if self.path == "/api/sets":
@@ -347,7 +359,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"ok": True, "presets": [{k: v for k, v in p.items() if k != "syx"} for p in presets]})
         body = json.loads(raw or "{}")
         params = merge(body.get("values", {}))
-        name = (body.get("name") or "EDITOR").upper()[:15]
+        name = pedal_name(body.get("name"), "EDITOR")
         tags = int(body["tags"]) if body.get("tags") is not None else TAGS
         if self.path == "/api/send":
             with lock:
@@ -399,7 +411,7 @@ class Handler(BaseHTTPRequestHandler):
                 if old:
                     BACKUPS.mkdir(exist_ok=True)
                     safe = "".join(c if c.isalnum() or c in " -" else "_" for c in old["name"]).strip()
-                    backup = BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} preset {slot} {safe}.syx"
+                    backup = unique_path(BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} preset {slot} {safe}.syx")
                     backup.write_bytes(build_syx(slot, old["name"], old["tags"], old["params"]))
                 ok, message = send_to_box(name, params, slot, tags)
             if ok and backup:
