@@ -18,8 +18,12 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 - 19 Lead Mute: Off 0, On 1
 - 32 Aux to Main Out: Off 0, On 1
 
+## Page 3/8 GLOBAL
+- 17 Global Key: Off 0, On 1
+- 15 Global Tempo: Off 0, On 1
+- 36 Mic Boost: Off 0, Low 1, High 2
+
 ## Seen on screen, not yet tested
-- Page 3 GLOBAL: Global Key OFF, Global Tempo OFF, Mic Boost LOW
 - Page 4 LOOP: Input AUX, Undo OFF, Loop Feedback 73 % (= value 23)
 - Page 5 SYSTEM: LCD Contrast 2, Tune Reference 440.0 Hz (= value 14, half-Hz), Up/Dn Function SET KEY, Pitch Pipe Level 0 dB,
   Lead Delay NONE, RoomSense LoCut 20 Hz
