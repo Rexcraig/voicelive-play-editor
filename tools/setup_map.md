@@ -46,7 +46,7 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 
 ## Page 7/8 MIC CONTROL
 - 48 MP76 Control: Default 0, Custom 1 (Default overrides the four button assignments; values below apply in Custom)
-- 20 MP75 Control: HIT 0 (manual), HIT + Talk 1, Preset Up 2, (Loop 3 per manual; confirm list on unit)
+- 20 MP75 Control: HIT 0, HIT + Talk 1, Preset Up 2, Loop 3 (confirmed on unit)
 - 47 MP76 Top / 45 MP76 Bottom / 46 MP76 Left / 44 MP76 Right:
   Preset Down 0, Preset Up 1, HIT 2, HIT + Talk 3, HIT + Tap 4, Loop 5, Loop Stop/Clear 6, Loop Undo 7, Tap Tempo 8, uMod 9,
   Delay 10, Delay Moment 11, Reverb 12, Harmony 13, Harm Moment 14, Doubling 15, Transducer 16, HardTune 17
