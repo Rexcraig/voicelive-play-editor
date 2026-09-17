@@ -318,8 +318,11 @@ function renderPicker() {
     li.append(el("span", "slot", p.slot ? String(p.slot) : "file"));
     li.append(el("span", "pname", p.name));
     const chips = el("span", "chips");
-    BLOCK_STATES.filter(([slot]) => p.params[slot]).forEach(([slot, label]) =>
-      chips.append(el("span", `chip${p.params[slot] === 2 ? " hit" : ""}`, label)));
+    BLOCK_STATES.filter(([slot]) => p.params[slot]).forEach(([slot, label, block]) => {
+      const chip = el("span", `chip${p.params[slot] === 2 ? " hit" : ""}`, label);
+      chip.dataset.block = block;
+      chips.append(chip);
+    });
     li.append(chips);
     const add = el("button", "ghost", "Add");
     add.type = "button";

@@ -28,6 +28,7 @@ async function boot() {
 function render() {
   const main = $("#blocks");
   main.innerHTML = "";
+  $("#leds").innerHTML = state.spec.blocks.map((b) => `<i data-block="${b.id}"></i>`).join("");
   for (const block of state.spec.blocks) {
     const params = state.spec.params.filter((p) => p.block === block.id);
     const stateParam = params.find((p) => p.kind === "state");
@@ -37,7 +38,7 @@ function render() {
 
     const head = document.createElement("div");
     head.className = "card-head";
-    head.innerHTML = `<div class="card-title"><h2>${block.title}</h2></div><p>${block.help}</p>`;
+    head.innerHTML = `<div class="card-title"><span class="led"></span><h2>${block.title}</h2></div><p>${block.help}</p>`;
     if (stateParam) head.querySelector(".card-title").append(segmented(stateParam, card));
     card.append(head);
 
@@ -53,7 +54,8 @@ function render() {
   if (globals.length) {
     const card = document.createElement("section");
     card.className = "card on";
-    card.innerHTML = `<div class="card-head"><div class="card-title"><h2>Song</h2></div>
+    card.dataset.block = "global";
+    card.innerHTML = `<div class="card-head"><div class="card-title"><span class="led"></span><h2>Song</h2></div>
       <p>Tempo is used by delay styles that follow the beat.</p></div>`;
     const body = document.createElement("div");
     body.className = "card-body";
@@ -66,6 +68,7 @@ function render() {
 function segmented(param, card) {
   const seg = document.createElement("div");
   seg.className = "seg";
+  seg.style.setProperty("--i", state.values[param.slot]);
   [["Off", 0], ["On", 1], ["HIT", 2]].forEach(([label, value]) => {
     const b = document.createElement("button");
     b.textContent = label;
@@ -74,6 +77,7 @@ function segmented(param, card) {
     b.onclick = () => {
       state.values[param.slot] = value;
       seg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(+x.dataset.value === value)));
+      seg.style.setProperty("--i", value);
       paint(card, value);
       push();
     };
@@ -86,6 +90,20 @@ function paint(card, value) {
   card.classList.toggle("off", value === 0);
   card.classList.toggle("on", value === 1);
   card.classList.toggle("hit", value === 2);
+  const led = $(`#leds [data-block="${card.dataset.block}"]`);
+  if (led) {
+    led.classList.toggle("on", value === 1);
+    led.classList.toggle("hit", value === 2);
+  }
+}
+
+// Paint the track between zero (or the left end) and the thumb.
+function fill(input) {
+  const min = +input.min, max = +input.max, v = +input.value;
+  const pct = (x) => `${((x - min) / (max - min)) * 100}%`;
+  const zero = min < 0 && max > 0 ? 0 : min;
+  input.style.setProperty("--from", pct(Math.min(zero, v)));
+  input.style.setProperty("--to", pct(Math.max(zero, v)));
 }
 
 function control(p) {
@@ -116,8 +134,10 @@ function control(p) {
     const out = document.createElement("span");
     out.className = "value";
     out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value);
+    fill(input);
     input.oninput = () => {
       state.values[p.slot] = +input.value;
+      fill(input);
       out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value);
       push();
     };
@@ -172,7 +192,8 @@ async function poll() {
   } catch { /* server restarting */ }
 }
 
-const BLOCK_STATES = [[33, "Harmony"], [34, "Double"], [32, "Reverb"], [31, "Delay"], [30, "µMod"], [36, "HardTune"], [35, "Transducer"]];
+const BLOCK_STATES = [[33, "Harmony", "harmony"], [34, "Double", "double"], [32, "Reverb", "reverb"], [31, "Delay", "delay"],
+  [30, "µMod", "umod"], [36, "HardTune", "hardtune"], [35, "Transducer", "megaphone"]];
 
 function showTab(name) {
   document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
@@ -238,7 +259,7 @@ function renderPedal() {
     if (q && !p.name.includes(q) && String(p.slot) !== q) continue;
     const li = document.createElement("li");
     const chips = BLOCK_STATES.filter(([slot]) => p.params[slot])
-      .map(([slot, label]) => `<span class="chip${p.params[slot] === 2 ? " hit" : ""}">${label}${p.params[slot] === 2 ? " · HIT" : ""}</span>`).join("");
+      .map(([slot, label, block]) => `<span class="chip${p.params[slot] === 2 ? " hit" : ""}" data-block="${block}">${label}${p.params[slot] === 2 ? " · HIT" : ""}</span>`).join("");
     const edited = p.saved ? `<span class="chip edited" title="Saved from this editor after the list was last read">saved here</span>` : "";
     li.innerHTML = `<span class="slot">${p.slot}</span><span class="pname"></span><span class="chips">${chips}${edited}</span>`;
     li.querySelector(".pname").textContent = p.name;
