@@ -25,11 +25,16 @@ async function boot() {
   setInterval(poll, 4000);
 }
 
+// Effect pages in the order the pedal's own screen numbers them, so card 3 is page 3 on the box.
+const PEDAL_PAGES = ["umod", "delay", "reverb", "harmony", "double", "hardtune", "megaphone"];
+
 function render() {
   const main = $("#blocks");
   main.innerHTML = "";
-  $("#leds").innerHTML = state.spec.blocks.map((b) => `<i data-block="${b.id}"></i>`).join("");
-  for (const block of state.spec.blocks) {
+  const page = (b) => PEDAL_PAGES.indexOf(b.id) + 1 || 99;
+  const blocks = [...state.spec.blocks].sort((a, b) => page(a) - page(b));
+  $("#leds").innerHTML = blocks.map((b) => `<i data-block="${b.id}"></i>`).join("");
+  for (const block of blocks) {
     const params = state.spec.params.filter((p) => p.block === block.id);
     const stateParam = params.find((p) => p.kind === "state");
     const card = document.createElement("section");
@@ -38,7 +43,9 @@ function render() {
 
     const head = document.createElement("div");
     head.className = "card-head";
-    head.innerHTML = `<div class="card-title"><span class="led"></span><h2>${block.title}</h2></div><p>${block.help}</p>`;
+    head.innerHTML = `<div class="card-title"><span class="led"></span><h2>${block.title}</h2>`
+      + (page(block) < 99 ? `<span class="page" title="Page ${page(block)} on the pedal">P${page(block)}</span>` : "")
+      + `</div><p>${block.help}</p>`;
     if (stateParam) head.querySelector(".card-title").append(segmented(stateParam, card));
     card.append(head);
 
@@ -50,19 +57,14 @@ function render() {
     paint(card, stateParam ? state.values[stateParam.slot] : 1);
   }
 
-  const globals = state.spec.params.filter((p) => p.block === "global");
-  if (globals.length) {
-    const card = document.createElement("section");
-    card.className = "card on";
-    card.dataset.block = "global";
-    card.innerHTML = `<div class="card-head"><div class="card-title"><span class="led"></span><h2>Song</h2></div>
-      <p>Tempo is used by delay styles that follow the beat.</p></div>`;
-    const body = document.createElement("div");
-    body.className = "card-body";
-    globals.forEach((p) => body.append(control(p)));
-    card.append(body);
-    $("#blocks").append(card);
-  }
+  // Song-wide settings (tempo) live in the top bar, next to the preset name.
+  const song = $("#song");
+  song.innerHTML = "";
+  state.spec.params.filter((p) => p.block === "global").forEach((p) => {
+    const row = control(p);
+    row.title = "Used by delay styles that follow the beat.";
+    song.append(row);
+  });
 }
 
 function segmented(param, card) {
@@ -122,8 +124,26 @@ function control(p) {
       sel.append(o);
     });
     sel.value = state.values[p.slot];
+    sel.id = `p${p.slot}`;
+    label.htmlFor = sel.id;
     sel.onchange = () => { state.values[p.slot] = +sel.value; push(); };
-    row.append(sel);
+    const step = (dir, glyph) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "step";
+      b.textContent = glyph;
+      b.setAttribute("aria-label", `${dir < 0 ? "Previous" : "Next"} ${p.label.toLowerCase()}`);
+      b.onclick = () => {
+        const n = p.options.length;
+        sel.value = (+sel.value + dir + n) % n;
+        sel.onchange();
+      };
+      return b;
+    };
+    const stepper = document.createElement("div");
+    stepper.className = "stepper";
+    stepper.append(step(-1, "‹"), sel, step(1, "›"));
+    row.append(stepper);
   } else {
     const wrap = document.createElement("div");
     wrap.className = "slider";
@@ -173,8 +193,15 @@ function pedalName(name, fallback = "UNTITLED") {
 
 async function send() {
   const data = await api("/api/send", { name: $("#preset-name").value, values: state.values, tags: state.tags });
+  const tx = $("#tx");
+  tx.classList.remove("blink");
+  tx.classList.toggle("err", !data.ok);
   if (!data.ok) hint(data.message, "live");
-  else if (state.hintSource === "live") hint("");  // clear only our own old error, never a save result
+  else {
+    void tx.offsetWidth;  // restart the blink
+    tx.classList.add("blink");
+    if (state.hintSource === "live") hint("");  // clear only our own old error, never a save result
+  }
 }
 
 function hint(text, source = "action") {
