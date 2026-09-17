@@ -59,7 +59,7 @@
 [data-block="umod"]      { --h: 155; }
 [data-block="hardtune"]  { --h: 125; }
 [data-block="megaphone"] { --h: 25; }
-:root, [data-block] { --fx: oklch(0.80 0.11 var(--h)); --fx-ink: oklch(0.21 0.04 var(--h)); }
+:root, [data-block] { --fx: oklch(0.80 0.055 var(--h)); --fx-ink: oklch(0.21 0.02 var(--h)); }
 [data-block="global"] { --fx: var(--lit); --fx-ink: var(--lit-ink); }
 
 * { box-sizing: border-box; }
