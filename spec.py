@@ -93,6 +93,34 @@ PARAMS = [
     (15, "global", "Tempo (BPM)", "range", (25, 300), False),
 ]
 
+# Plain-language help for each effect setting, shown behind the info button in the editor.
+PARAM_HELP = {
+    1: "Which harmony lines the pedal sings with you: above, below, or both, and how many voices.",
+    2: "The song's key, so the harmonies stay in tune. Auto follows what the pedal hears you sing.",
+    3: "Which scale the harmony notes are picked from inside the key. The variations shift a few notes each, so try them if a harmony sounds sour.",
+    5: "How loud the harmony voices are against your own.",
+    4: "How many copies of your voice are added and how closely they follow it. Wider styles spread them left and right.",
+    6: "How loud the copies are against your own voice.",
+    20: "The kind of space: plates and rooms are tight, halls and arenas are big.",
+    21: "How long the reverb tail lasts after you stop singing.",
+    9: "How loud the reverb is against your voice.",
+    14: "The echo pattern: single repeats, rhythmic ones that follow the tempo, or ping-pong between left and right.",
+    16: "How long before the echo repeats on the left, in milliseconds. Only styles that don't follow the tempo use it.",
+    17: "How long before the echo repeats on the right, in milliseconds. Only styles that don't follow the tempo use it.",
+    18: "How many times each echo repeats before fading away.",
+    19: "The tone of the repeats. Tape and analog styles get duller with each one, like older echo machines.",
+    8: "How loud the echoes are against your voice.",
+    13: "The kind of movement added: chorus, flanging, rotating speaker and stranger effects.",
+    7: "How loud the modulation effect is against your voice.",
+    27: "How hard your pitch is pushed to the nearest note, from gentle correction to the hard Auto-Tune sound.",
+    28: "Moves your voice up or down in semitones.",
+    29: "Changes the character of the voice: lower sounds bigger and deeper, higher sounds thinner and brighter.",
+    22: "The voice it imitates: megaphone, radio, telephone or a guitar amp.",
+    24: "How hard the sound is pushed, from slight grit to full distortion.",
+    26: "The tone of the distortion, from thin and boxy to full and open.",
+    15: "The song's tempo. Delay styles that follow the beat use it, so their echoes stay in time.",
+}
+
 BLOCKS = [
     ("harmony", "Harmony", "Adds sung harmony lines above or below the lead."),
     ("double", "Doubling", "Stacks copies of the voice for a thicker, produced sound."),
@@ -235,7 +263,7 @@ def as_json():
              "options": o if k == "choice" else None,
              "min": o[0] if k in ("range", "db") else None,
              "max": o[1] if k in ("range", "db") else None,
-             "confirmed": c}
+             "confirmed": c, "help": PARAM_HELP.get(s, "")}
             for s, b, l, k, o, c in PARAMS
         ],
     }

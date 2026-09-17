@@ -114,6 +114,10 @@ function control(p) {
   row.className = "row";
   const label = document.createElement("label");
   label.textContent = p.label;
+  if (p.help) {
+    const note = "This setting's name is our best reading. The pedal's own screen doesn't show it, so it isn't confirmed.";
+    label.append(infoButton(p.label, p.confirmed ? p.help : `${p.help}\n\n${note}`, !p.confirmed));
+  }
   row.append(label);
 
   if (p.kind === "choice") {
@@ -165,7 +169,6 @@ function control(p) {
     wrap.append(input, out);
     row.append(wrap);
   }
-  if (!p.confirmed) label.insertAdjacentHTML("beforeend", '<span class="guess" title="Name inferred, not yet verified on the pedal">?</span>');
   return row;
 }
 

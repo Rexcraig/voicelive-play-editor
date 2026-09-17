@@ -126,7 +126,7 @@ input, textarea { caret-color: var(--lit); }
 .bar-song .row > label { white-space: nowrap; font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
 .bar-song .slider { gap: 10px; }
 .bar-song .value { min-width: 48px; }
-.bar-song .guess { display: none; }
+.bar-song .info { display: none; }
 
 .bar-right > *, .menu summary, button.primary { white-space: nowrap; }
 
@@ -182,7 +182,9 @@ input, textarea { caret-color: var(--lit); }
   animation: tip-in 120ms var(--ease-out);
 }
 .tip strong { display: block; margin-bottom: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--lit); }
-.tip p { margin: 0; font-size: 13px; line-height: 1.5; color: var(--text); }
+.tip p { margin: 0 0 8px; font-size: 13px; line-height: 1.5; color: var(--text); }
+.tip p:last-child { margin-bottom: 0; }
+.tip p + p { color: var(--muted); }
 @keyframes tip-in { from { opacity: 0; transform: translateY(-3px); } }
 
 /* "sent": blinks each time a change actually goes out to the pedal */
@@ -384,7 +386,8 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focu
   transition: color 200ms var(--ease-out);
 }
 .card.off .value { color: var(--muted); }
-.guess { color: var(--hit); font-size: 11px; margin-left: 6px; }
+.info.unconfirmed { color: var(--hit); border-color: oklch(0.83 0.14 78 / 0.5); }
+.info.unconfirmed:hover, .info.unconfirmed[aria-expanded="true"] { color: var(--hit); border-color: var(--hit); }
 
 footer { padding: 0 28px 40px; color: var(--muted); font-size: 13px; max-width: 72ch; }
 footer strong { color: var(--text); font-weight: 600; }

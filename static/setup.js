@@ -178,9 +178,13 @@ function tipEl() {
 
 function showTip(button, title, text) {
   const el = tipEl();
-  el.innerHTML = "<strong></strong><p></p>";
+  el.innerHTML = "<strong></strong>";
   el.querySelector("strong").textContent = title;
-  el.querySelector("p").textContent = text;
+  text.split("\n\n").forEach((part) => {
+    const p = document.createElement("p");
+    p.textContent = part;
+    el.append(p);
+  });
   el.hidden = false;
   const r = button.getBoundingClientRect();
   const width = Math.min(320, innerWidth - 24);
@@ -201,10 +205,10 @@ function hideTip() {
   tip.open = null;
 }
 
-function infoButton(title, text) {
+function infoButton(title, text, unconfirmed = false) {
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "info";
+  b.className = unconfirmed ? "info unconfirmed" : "info";
   b.textContent = "i";
   b.setAttribute("aria-label", `What ${title} does`);
   b.setAttribute("aria-expanded", "false");
