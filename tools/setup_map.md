@@ -37,10 +37,15 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 - 43 RoomSense LoCut: index 0..112, Hz = round(20 * 2^(index/24)) (1/24-octave steps; 0 = 20 Hz, 2 = 21 Hz, 112 = 508 Hz;
      formula fits all three readings, mid-range not spot-checked)
 
+## Page 6/8 SWITCH-3 (footswitch accessory)
+- 37 Control: Loop Mode 0, Custom 1 (Loop Mode shows fixed loop functions; switch values below apply in Custom)
+- 38 / 39 Harm Moment, Delay Moment: Off 0, On 1 (which is which: resolving)
+- 40 / 41 / 42 Switch 1 / 2 / 3 function: Loop Rec/Play 0, Loop Stop/Clear 1, Loop Undo 2, Loop Start/Stop 3, 1 BTN Looper 4,
+  Tap Tempo 5, Harmony 6, Delay 7, uMod 8, Transducer 9, HardTune 10, Doubling 11, Reverb 12
+
 ## Seen on screen, not yet tested
 - Page 5 SYSTEM: LCD Contrast 2, Tune Reference 440.0 Hz (= value 14, half-Hz), Up/Dn Function SET KEY, Pitch Pipe Level 0 dB,
   Lead Delay NONE, RoomSense LoCut 20 Hz
-- Page 6 SWITCH-3: Control LOOP MODE, Harm Moment OFF, Delay Moment OFF, Switch 1 LOOP REC/PLAY, Switch 2 LOOP STOP/CLEAR, Switch 3 LOOP UNDO
 - Page 7 MIC CONTROL: MP76 Control CUSTOM, MP75 Control HIT + TALK, MP76 Top HIT, MP76 Bottom DOUBLING, MP76 Left LOOP, MP76 Right HIT
 - Page 8 PRODUCT INFO (read-only): Firmware 1.4.00 B70, Serial 00000000, Manufacture date NOT SET
 
