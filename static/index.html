@@ -41,6 +41,7 @@
   <button role="tab" data-tab="editor" aria-selected="true">Editor</button>
   <button role="tab" data-tab="pedal" aria-selected="false">On the pedal</button>
   <button role="tab" data-tab="sets" aria-selected="false">Sets</button>
+  <button role="tab" data-tab="setup" aria-selected="false">Setup</button>
 </nav>
 
 <main id="blocks"></main>
@@ -58,6 +59,18 @@
     <input id="pedal-search" type="search" placeholder="Search name or slot" spellcheck="false">
   </div>
   <ol id="pedal-list"></ol>
+</section>
+
+<section id="setup" hidden>
+  <div class="notice">
+    <div>
+      <strong>Whole-pedal settings</strong>
+      <p id="setup-source">These apply to every preset, the same as the pedal's own Setup button. Each change goes to the pedal straight away.</p>
+    </div>
+    <button class="ghost" id="setup-refresh">Read pedal</button>
+  </div>
+  <p id="setup-msg" class="setup-msg" hidden></p>
+  <div class="setup-grid" id="setup-pages"></div>
 </section>
 
 <section id="sets" hidden>
@@ -128,5 +141,6 @@
 <div id="drop-hint" hidden>Drop a preset file to import it</div>
 <script src="/app.js"></script>
 <script src="/sets.js"></script>
+<script src="/setup.js"></script>
 </body>
 </html>

@@ -6,12 +6,14 @@ Behaviour copied from the real unit (tools/capture.txt and tests on 2026-09-16):
   20 + 21 + 21  -> stores the preset, acks 34 01 hi lo
   57 00 00/01   -> session begin/end, no reply
   F0 7E 7F 06 01 F7 -> identity reply
+  15 00         -> setup block as three 0x13 packets (25 values each)
+  13 01 34 i .. -> setup write; refused with 34 09 00 00 per packet inside a session, acked 34 01 00 00 outside (2026-09-17)
 """
 import sys
 import types
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
-from tch import build_syx, parse_syx, pedal_name  # noqa: E402
+from tch import build_syx, checksum, decode28, encode28, parse_syx, pedal_name  # noqa: E402
 
 HEAD = [0xF0, 0x00, 0x01, 0x38, 0x00, 0x69]
 IDENTITY_REPLY = [0xF0, 0x7E, 0x00, 0x06, 0x02, 0x00, 0x01, 0x38, 0x69, 0x00, 0x00, 0x00, 0x00, 0xF7]
@@ -33,6 +35,11 @@ class FakePedal:
         self.stray_packet_before_reply = False  # send a lone 0x21 packet before answering a read
         self.writes = 0
         self.name_filter = pedal_name  # measured on the real unit
+        self.setup = [0] * 75
+        self.setup[14], self.setup[21], self.setup[28] = 880, 2, 1  # 440 Hz, contrast 2, RoomSense Ambient/Auto
+        self.in_session = False
+        self.setup_pending = {}
+        self.setup_clamp = {}  # index -> max value the pedal accepts (simulate a range limit)
 
     def reply(self, msg):
         for port in self.inputs:
@@ -47,7 +54,24 @@ class FakePedal:
         if msg[:6] != HEAD:
             return
         cmd = msg[6]
-        if cmd == 0x45:
+        if cmd == 0x57:
+            self.in_session = msg[8] == 0
+        elif cmd == 0x15:
+            for i in range(3):
+                data = b"".join(encode28(v) for v in self.setup[i * 25:(i + 1) * 25])
+                self.reply(HEAD + [0x13, 0x01, 0x34, i] + list(data) + [checksum(data), 0xF7])
+        elif cmd == 0x13:
+            if self.in_session:
+                return self.reply(HEAD + [0x34, 0x09, 0x00, 0x00, 0xF7])
+            data = msg[10:-2]
+            self.setup_pending[msg[9]] = [decode28(data[j:j + 4]) for j in range(0, 100, 4)]
+            if len(self.setup_pending) == 3:
+                new = [v for i in range(3) for v in self.setup_pending[i]]
+                for i, top in self.setup_clamp.items():
+                    new[i] = min(new[i], top)
+                self.setup, self.setup_pending = new, {}
+                self.reply(HEAD + [0x34, 0x01, 0x00, 0x00, 0xF7])
+        elif cmd == 0x45:
             slot = (msg[7] << 7) | msg[8]
             p = self.slots.get(slot)
             if not p:

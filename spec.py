@@ -104,8 +104,91 @@ BLOCKS = [
 ]
 
 
+# SETUP menu (whole-pedal settings, not per preset). Index = position in the 75-value setup block; mapped on the
+# unit with Will 2026-09-17 (tools/setup_map.md). kind: choice | onoff | percent | step (range not measured: +/-1 buttons,
+# the pedal keeps what it accepts) | hz2 (value = Hz x 2) | locut (index 0..112, Hz = 20 * 2^(index/24)).
+ON_OFF = ["Off", "On"]
+SWITCH3_FUNCTIONS = ["Loop Rec/Play", "Loop Stop/Clear", "Loop Undo", "Loop Start/Stop", "1 Button Looper", "Tap Tempo",
+                     "Harmony", "Delay", "uMod", "Transducer", "HardTune", "Doubling", "Reverb"]
+MP76_FUNCTIONS = ["Preset Down", "Preset Up", "HIT", "HIT + Talk", "HIT + Tap", "Loop", "Loop Stop/Clear", "Loop Undo",
+                  "Tap Tempo", "uMod", "Delay", "Delay Moment", "Reverb", "Harmony", "Harm Moment", "Doubling",
+                  "Transducer", "HardTune"]
+SETUP_PAGES = [
+    ("input", "Input", "Which mic is plugged in, and how the pedal treats the voice before any effects.", [
+        (9, "Input", "choice", ["Dynamic Mic", "Condenser Mic", "MP-75 Mic", "E835FX Mic", "MP-76 Mic", "USB Left", "USB Right", "RoomSense"]),
+        (28, "RoomSense", "choice", ["Ambient", "Ambient/Auto", "Voice"]),
+        (31, "Aux In Type", "choice", ["Live", "Tracks", "Monitor"]),
+        (30, "Tone Style", "choice", ["Off", "Normal", "Less Bright", "Norm+Warmth", "More Comp", "Norm No Gate",
+                                      "Less Bright NG", "Warmth NG", "More Comp NG"]),
+        (8, "Pitch Correction", "percent", (0, 100)),
+    ]),
+    ("output", "Output", "How sound leaves the pedal: to the PA, headphones and USB.", [
+        (6, "Output", "choice", ["Stereo", "Mono", "Dual Mono"]),
+        (1, "USB Out", "step", "dB"),
+        (35, "Vocal Cancel", "onoff", ON_OFF),
+        (34, "Headphone Limit", "step", "dB"),
+        (19, "Lead Mute", "onoff", ON_OFF),
+        (32, "Aux to Main Out", "onoff", ON_OFF),
+    ]),
+    ("global", "Global", "Settings that stay put when you change presets.", [
+        (17, "Global Key", "onoff", ON_OFF),
+        (15, "Global Tempo", "onoff", ON_OFF),
+        (36, "Mic Boost", "choice", ["Off", "Low", "High"]),
+    ]),
+    ("loop", "Loop", "How the looper records.", [
+        (7, "Loop Input", "choice", ["Lead Mix", "Aux", "Lead Mix and Aux"]),
+        (24, "Undo", "onoff", ON_OFF),
+        (23, "Loop Feedback", "percent", (0, 100)),
+    ]),
+    ("system", "System", "The screen, tuning and how the pedal itself behaves.", [
+        (21, "LCD Contrast", "step", ""),
+        (14, "Tune Reference", "hz2", "Hz"),
+        (22, "Up + Down Switches", "choice", ["Looping", "Set Key"]),
+        (13, "Pitch Pipe Level", "step", "dB"),
+        (18, "Lead Delay", "choice", ["None", "Voice Sync", "Auto"]),
+        (43, "RoomSense Low Cut", "locut", (0, 112)),
+    ]),
+    ("switch3", "Switch-3", "What the optional three-button footswitch does. Switches 1-3 apply when Control is Custom.", [
+        (37, "Control", "choice", ["Loop Mode", "Custom"]),
+        (38, "Harm Moment", "onoff", ON_OFF),
+        (39, "Delay Moment", "onoff", ON_OFF),
+        (40, "Switch 1", "choice", SWITCH3_FUNCTIONS),
+        (41, "Switch 2", "choice", SWITCH3_FUNCTIONS),
+        (42, "Switch 3", "choice", SWITCH3_FUNCTIONS),
+    ]),
+    ("mic", "Mic Control", "What the buttons on a TC-Helicon MP-75 or MP-76 mic do. The four MP-76 buttons apply when MP-76 Control is Custom.", [
+        (20, "MP-75 Control", "choice", ["HIT", "HIT + Talk", "Preset Up", "Loop"]),
+        (48, "MP-76 Control", "choice", ["Default", "Custom"]),
+        (47, "MP-76 Top", "choice", MP76_FUNCTIONS),
+        (45, "MP-76 Bottom", "choice", MP76_FUNCTIONS),
+        (46, "MP-76 Left", "choice", MP76_FUNCTIONS),
+        (44, "MP-76 Right", "choice", MP76_FUNCTIONS),
+    ]),
+]
+SETUP_FIELDS = {i: (label, kind, extra) for _, _, _, fields in SETUP_PAGES for i, label, kind, extra in fields}
+
+
+def setup_value_ok(index, value):
+    if index not in SETUP_FIELDS:
+        return False
+    _, kind, extra = SETUP_FIELDS[index]
+    if kind in ("choice", "onoff"):
+        return 0 <= value < len(extra) and not (index == 9 and value == 7)  # RoomSense input is set via RoomSense: Voice
+    if kind in ("percent", "locut"):
+        return extra[0] <= value <= extra[1]
+    return -200 <= value <= 2000  # step / hz2: range not measured; the pedal's read-back is the judge
+
+
 def as_json():
     return {
+        "setup": [{"id": i, "title": t, "help": h,
+                   "fields": [{"index": x, "label": l, "kind": k,
+                               "options": e if k in ("choice", "onoff") else None,
+                               "unit": e if k in ("step", "hz2") else None,
+                               "min": e[0] if k in ("percent", "locut") else None,
+                               "max": e[1] if k in ("percent", "locut") else None}
+                              for x, l, k, e in fields]}
+                  for i, t, h, fields in SETUP_PAGES],
         "blocks": [{"id": b, "title": t, "help": h} for b, t, h in BLOCKS],
         "params": [
             {"slot": s, "block": b, "label": l, "kind": k,

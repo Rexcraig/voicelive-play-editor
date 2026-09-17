@@ -194,14 +194,19 @@ function pedalName(name, fallback = "UNTITLED") {
 
 async function send() {
   const data = await api("/api/send", { name: $("#preset-name").value, values: state.values, tags: state.tags });
+  blinkTx(data.ok);
+  if (!data.ok) hint(data.message, "live");
+  else if (state.hintSource === "live") hint("");  // clear only our own old error, never a save result
+}
+
+// The top bar's "Sent" light: blinks when a change reached the pedal, stays red when one didn't.
+function blinkTx(ok) {
   const tx = $("#tx");
   tx.classList.remove("blink");
-  tx.classList.toggle("err", !data.ok);
-  if (!data.ok) hint(data.message, "live");
-  else {
+  tx.classList.toggle("err", !ok);
+  if (ok) {
     void tx.offsetWidth;  // restart the blink
     tx.classList.add("blink");
-    if (state.hintSource === "live") hint("");  // clear only our own old error, never a save result
   }
 }
 
@@ -229,7 +234,9 @@ function showTab(name) {
   $("footer").hidden = name !== "editor";
   $("#pedal").hidden = name !== "pedal";
   $("#sets").hidden = name !== "sets";
+  $("#setup").hidden = name !== "setup";
   if (name === "sets") openSetsTab();
+  if (name === "setup") openSetupTab();
   if (name === "pedal" && !state.pedalOpened) {
     state.pedalOpened = true;
     loadPedal().then(() => { if (state.connected) readPedal(); });

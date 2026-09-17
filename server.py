@@ -12,7 +12,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import rtmidi
 
 import spec
-from tch import NAME_CHARS, NAME_LENGTH, build_syx, parse_syx, pedal_name, read_presets  # noqa: E402
+from tch import NAME_CHARS, NAME_LENGTH, build_syx, checksum, decode28, encode28, parse_syx, pedal_name, read_presets  # noqa: E402
 
 HERE = pathlib.Path(__file__).resolve().parent
 VS_DATA = pathlib.Path.home() / "Library/TC-Helicon/VoiceSupport 2/VoiceLive Play/data"
@@ -130,6 +130,10 @@ class PedalLink:
     """Request/response session with the pedal, using the commands VoiceSupport uses (captured 2026-09-16)."""
     HEAD = [0xF0, 0x00, 0x01, 0x38, 0x00, 0x69]
 
+    def __init__(self, session=True):
+        # Setup writes must go OUTSIDE a session: inside one the pedal refuses them with 34 09 00 00 (tested 2026-09-17).
+        self.session = session
+
     def __enter__(self):
         self.out, self.inp = rtmidi.MidiOut(), rtmidi.MidiIn()
         if DEVICE not in self.out.get_ports():
@@ -137,12 +141,14 @@ class PedalLink:
         self.out.open_port(self.out.get_ports().index(DEVICE))
         self.inp.ignore_types(sysex=False)
         self.inp.open_port(self.inp.get_ports().index(DEVICE))
-        self.out.send_message(self.HEAD + [0x57, 0x00, 0x00, 0xF7])  # begin session
+        if self.session:
+            self.out.send_message(self.HEAD + [0x57, 0x00, 0x00, 0xF7])  # begin session
         return self
 
     def __exit__(self, *exc):
         try:
-            self.out.send_message(self.HEAD + [0x57, 0x00, 0x01, 0xF7])  # end session
+            if self.session:
+                self.out.send_message(self.HEAD + [0x57, 0x00, 0x01, 0xF7])  # end session
         finally:
             self.inp.close_port()
             self.out.close_port()
@@ -205,6 +211,86 @@ class PedalLink:
         back = self.read(slot)
         ok = acked and back is not None and (back["name"], back["params"], back["tags"]) == (name, params, tags)
         return ok, back
+
+
+SETUP_PACKETS = 3  # the setup block: 15 00 -> three 0x13 packets of 25 values (75 in all)
+
+
+def _setup_packets(link):
+    """Ask for the setup block and return {index: raw message}. Raises PedalError if it doesn't arrive whole."""
+    link.drain()
+    link.out.send_message(link.HEAD + [0x15, 0x00, 0xF7])
+    packets, deadline = {}, time.time() + 1.5
+    while time.time() < deadline and len(packets) < SETUP_PACKETS:
+        m = link.inp.get_message()
+        if not m:
+            time.sleep(0.002)
+            continue
+        m = list(m[0])
+        if m[:7] == link.HEAD + [0x13] and len(m) > 12 and checksum(m[10:-2]) == m[-2]:
+            packets[m[9]] = m
+    if len(packets) < SETUP_PACKETS:
+        raise PedalError("The pedal didn't send its setup settings. Try again, or reconnect the USB cable.")
+    return packets
+
+
+def _setup_values(packets):
+    values = []
+    for i in sorted(packets):
+        data = packets[i][10:-2]
+        values += [decode28(data[j:j + 4]) for j in range(0, len(data) - len(data) % 4, 4)]
+    return values
+
+
+def read_setup():
+    with PedalLink() as link:
+        return _setup_values(_setup_packets(link))
+
+
+def setup_changes(values, index, value):
+    """The values the pedal's own menu changes together (observed on the unit 2026-09-17)."""
+    changes = {index: value}
+    if index == 28:  # RoomSense: Voice makes RoomSense the input; leaving Voice restores the last mic
+        if value == 2 and values[28] != 2:
+            changes.update({9: 7, 27: 1})
+        elif value != 2 and values[28] == 2:
+            changes.update({9: values[10], 27: 0})
+    if index == 9:  # choosing a mic also records it as the last mic
+        changes[10] = value
+    return changes
+
+
+def write_setup(index, value):
+    """Change one setup setting. Returns (ok, values now on the pedal, message)."""
+    with PedalLink() as link:
+        packets = _setup_packets(link)
+    values = _setup_values(packets)
+    changes = setup_changes(values, index, value)
+    per = (len(packets[0]) - 12) // 4
+    for i, v in changes.items():
+        p, k = divmod(i, per)
+        data = packets[p][10:-2]
+        data[k * 4:k * 4 + 4] = list(encode28(v))
+        packets[p] = packets[p][:10] + data + [checksum(data), 0xF7]
+    acked = False
+    with PedalLink(session=False) as link:
+        link.drain()
+        for i in sorted(packets):
+            link.out.send_message(packets[i])
+            time.sleep(0.02)
+        deadline = time.time() + 2
+        while time.time() < deadline and not acked:
+            m = link.inp.get_message()
+            if not m:
+                time.sleep(0.002)
+            else:
+                acked = list(m[0]) == link.HEAD + [0x34, 0x01, 0x00, 0x00, 0xF7]
+    now = read_setup()
+    if all(now[i] == v for i, v in changes.items()):
+        return True, now, "sent"
+    label = spec.SETUP_FIELDS[index][0]
+    why = "didn't confirm the change" if not acked else "kept a different value"
+    return False, now, f"The pedal {why} for {label}. The screen shows what it holds now."
 
 
 def pedal_answers():
@@ -380,7 +466,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html"):
             return self._send(200, (HERE / "static/index.html").read_bytes(), "text/html; charset=utf-8")
-        for name, ctype in (("app.js", "text/javascript"), ("sets.js", "text/javascript"), ("style.css", "text/css")):
+        for name, ctype in (("app.js", "text/javascript"), ("sets.js", "text/javascript"), ("setup.js", "text/javascript"), ("style.css", "text/css")):
             if self.path == "/" + name:
                 return self._send(200, (HERE / "static" / name).read_bytes(), ctype)
         if self.path.startswith("/fonts/"):  # self-hosted OFL fonts, see static/style.css
@@ -412,6 +498,13 @@ class Handler(BaseHTTPRequestHandler):
             except PedalError as e:
                 return self._send(503, {"ok": False, "message": str(e)})
             return self._send(200, {"ok": True, "preset": preset})
+        if self.path == "/api/setup":
+            try:
+                with lock:
+                    values = read_setup()
+            except PedalError as e:
+                return self._send(503, {"ok": False, "message": str(e)})
+            return self._send(200, {"ok": True, "values": values})
         if self.path == "/api/status":
             return self._send(200, {"connected": pedal_answers()})
         self._send(404, {"error": "not found"})
@@ -461,6 +554,16 @@ class Handler(BaseHTTPRequestHandler):
             if not presets or start < 1 or start + len(presets) - 1 > CAPACITY:
                 return self._send(400, {"ok": False, "message": f"The set has to fit in presets 1 to {CAPACITY}."})
             return self._send(200, load_set(body.get("set_name", "set"), start, presets))
+        if self.path == "/api/setup":
+            index, value = int(body.get("index", -1)), int(body.get("value", 0))
+            if not spec.setup_value_ok(index, value):
+                return self._send(400, {"ok": False, "message": "That isn't a setting the pedal's Setup menu offers."})
+            try:
+                with lock:
+                    ok, values, message = write_setup(index, value)
+            except PedalError as e:
+                return self._send(503, {"ok": False, "message": str(e)})
+            return self._send(200 if ok else 502, {"ok": ok, "values": values, "message": message})
         if self.path == "/api/pedal/read":
             try:
                 with lock:
