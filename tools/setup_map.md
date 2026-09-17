@@ -39,7 +39,8 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 
 ## Page 6/8 SWITCH-3 (footswitch accessory)
 - 37 Control: Loop Mode 0, Custom 1 (Loop Mode shows fixed loop functions; switch values below apply in Custom)
-- 38 / 39 Harm Moment, Delay Moment: Off 0, On 1 (which is which: resolving)
+- 38 Harm Moment: Off 0, On 1
+- 39 Delay Moment: Off 0, On 1
 - 40 / 41 / 42 Switch 1 / 2 / 3 function: Loop Rec/Play 0, Loop Stop/Clear 1, Loop Undo 2, Loop Start/Stop 3, 1 BTN Looper 4,
   Tap Tempo 5, Harmony 6, Delay 7, uMod 8, Transducer 9, HardTune 10, Doubling 11, Reverb 12
 
