@@ -608,6 +608,51 @@ button.add-song:active { transform: translateY(1px); }
 #load-plan tr.is-same td { color: var(--muted); }
 #load-result { color: var(--lit); }
 
+/* "Set up my rig": questions first, then the settings that follow from the answers. */
+#rig-dialog { width: min(720px, calc(100vw - 32px)); }
+#rig-intro { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+.rig-q { margin: 0 0 16px; padding: 0; border: 0; }
+.rig-q legend { padding: 0 0 8px; font-size: 13.5px; font-weight: 600; color: var(--text); }
+.rig-note { display: block; font-weight: 400; font-size: 12px; color: var(--muted); }
+legend .rig-note { margin-top: 3px; }
+.rig-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px; }
+.rig-opt {
+  display: flex; gap: 9px; align-items: flex-start; padding: 9px 11px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); font-size: 13px;
+}
+.rig-opt:hover { border-color: var(--line-2); }
+.rig-opt:has(input:checked) { border-color: var(--lit); background: oklch(0.93 0.035 195 / 0.07); }
+.rig-opt:has(input:focus-visible) { box-shadow: var(--focus); }
+.rig-opt input { margin: 2px 0 0; accent-color: var(--lit); flex: none; }
+.rig-opt-text strong { font-weight: 500; }
+#rig-plan-wrap h3 { margin: 22px 0 6px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+#rig-summary { margin: 0; font-size: 13px; color: var(--muted); }
+#rig-plan-wrap .rig-note { margin-top: 8px; }
+#rig-plan { width: 100%; border-collapse: collapse; font-size: 13px; }
+#rig-plan th { position: sticky; top: 0; z-index: 1; background: var(--panel-2); text-align: left; font-size: 11px; color: var(--muted); padding: 9px 10px; }
+#rig-plan td { padding: 8px 10px; border-top: 1px solid var(--line); vertical-align: top; }
+#rig-plan td.tick { width: 28px; }
+#rig-plan td.tick input { accent-color: var(--lit); }
+#rig-plan td.name label { cursor: pointer; }
+#rig-plan td.was { color: var(--muted); font-family: var(--mono); }
+#rig-plan td.now { color: var(--lit); font-family: var(--mono); }
+#rig-plan td.why { color: var(--muted); min-width: 220px; }
+#rig-plan tr:has(input:not(:checked)) td:not(.tick) { opacity: 0.45; }
+#rig-result { color: var(--lit); font-size: 13px; }
+.notice-buttons { display: flex; gap: 8px; margin-left: auto; }
+.notice .notice-buttons button { margin-left: 0; }
+/* Too many columns for a phone: each change becomes a small block instead. */
+@media (max-width: 700px) {
+  #rig-plan, #rig-plan tbody, #rig-plan tr, #rig-plan td { display: block; width: auto; }
+  #rig-plan thead, #rig-plan tr:first-child { display: none; }
+  #rig-plan tr { border-top: 1px solid var(--line); padding: 10px 10px 12px; }
+  #rig-plan td { border: 0; padding: 1px 0 0 26px; }
+  #rig-plan td.tick { float: left; width: 26px; padding: 2px 0 0; }
+  #rig-plan td.name { font-weight: 500; }
+  #rig-plan td.was::before { content: "now "; font-family: var(--sans); }
+  #rig-plan td.now::before { content: "becomes "; font-family: var(--sans); color: var(--muted); }
+}
+
 #sets-notice {
   grid-column: 1 / -1; margin: 0; padding: 10px 14px; border-radius: var(--radius);
   background: oklch(0.83 0.14 78 / 0.08); border: 1px solid oklch(0.83 0.14 78 / 0.35); color: var(--hit); font-size: 13px;

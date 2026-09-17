@@ -236,6 +236,164 @@ SETUP_HELP = {
 }
 
 
+# "Set up my rig": a few plain questions, then a proposed baseline the user applies with one button.
+# Each answer maps to setup settings with a reason in the same language as SETUP_HELP. Agreed with Will 2026-09-17.
+RIG_QUESTIONS = [
+    {"id": "mic", "question": "What do you sing into?", "options": [
+        {"id": "dynamic", "label": "A normal stage mic", "note": "SM58, KSM8, Beta 58 and the like."},
+        {"id": "condenser", "label": "A condenser mic", "note": "Needs phantom power from the pedal."},
+        {"id": "mp75", "label": "A TC-Helicon MP-75", "note": "The mic with one button on it."},
+        {"id": "mp76", "label": "A TC-Helicon MP-76", "note": "The mic with four buttons on it."},
+        {"id": "e835", "label": "A Shure E835FX", "note": ""},
+        {"id": "roomsense", "label": "Nothing — the pedal's own mics", "note": "Only heard in headphones."},
+    ]},
+    {"id": "wireless", "question": "Is the microphone on a wireless system?",
+     "when": {"mic": ["dynamic", "condenser", "mp75", "mp76", "e835"]}, "options": [
+        {"id": "yes", "label": "Yes", "note": "The mic sends to a receiver box."},
+        {"id": "no", "label": "No", "note": "The mic cable goes straight into the pedal."},
+     ]},
+    {"id": "outputs", "question": "How does the sound get out of the pedal?", "options": [
+        {"id": "one", "label": "One cable, to an amp or a PA", "note": ""},
+        {"id": "two", "label": "Two cables, left and right, to a PA", "note": ""},
+        {"id": "separate", "label": "Two cables, voice and effects apart",
+         "note": "Only if a sound engineer asked for them separately."},
+        {"id": "phones", "label": "Headphones only", "note": "For practising."},
+    ]},
+    {"id": "aux", "question": "Is anything plugged into the Aux socket?", "options": [
+        {"id": "nothing", "label": "Nothing", "note": ""},
+        {"id": "band", "label": "A feed from the band, or an instrument", "note": ""},
+        {"id": "tracks", "label": "Backing tracks I sing along to", "note": ""},
+        {"id": "monitor", "label": "Something I just want to hear", "note": "Not sung along with."},
+    ]},
+    {"id": "key", "question": "How should the pedal know the song's key for harmonies?", "options": [
+        {"id": "myself", "label": "I set it myself", "note": "It stays put until you change it."},
+        {"id": "follow", "label": "It should work it out from the music", "note": ""},
+    ]},
+    {"id": "switch3", "question": "Do you use a three-button footswitch?",
+     "note": "The optional Switch-3 that plugs into the back.", "options": [
+        {"id": "none", "label": "No", "note": ""},
+        {"id": "loop", "label": "Yes, for the looper", "note": ""},
+        {"id": "effects", "label": "Yes, to switch effects on and off", "note": "Harmony, Delay and Reverb."},
+     ]},
+    {"id": "mp75button", "question": "What should the button on the MP-75 do?",
+     "when": {"mic": ["mp75"]}, "options": [
+        {"id": "hit", "label": "HIT", "note": "Turns the preset's big effects on and off."},
+        {"id": "talk", "label": "HIT, and mute for talking", "note": "Hold it to talk without effects."},
+        {"id": "preset", "label": "Next preset", "note": ""},
+        {"id": "loop", "label": "Looper", "note": ""},
+     ]},
+    {"id": "mp76buttons", "question": "How should the four MP-76 buttons work?",
+     "when": {"mic": ["mp76"]}, "options": [
+        {"id": "default", "label": "The standard layout", "note": "What the mic does out of the box."},
+        {"id": "keep", "label": "Leave my own assignments alone", "note": ""},
+     ]},
+]
+
+
+def rig_visible(question, answers):
+    """A question is asked only when earlier answers call for it."""
+    return all(answers.get(k) in v for k, v in question.get("when", {}).items())
+
+
+def _rig_settings(answers):
+    """Answers -> {setup index: (value, reason)}. Only settings the answers actually decide."""
+    out = {}
+    ask = {q["id"]: answers.get(q["id"]) for q in RIG_QUESTIONS if rig_visible(q, answers)}
+    mic, aux = ask.get("mic"), ask.get("aux")
+
+    inputs = {"dynamic": 0, "condenser": 1, "mp75": 2, "e835": 3, "mp76": 4}
+    if mic in inputs:
+        out[9] = (inputs[mic], "So the pedal treats the microphone you plugged in the right way.")
+        out[28] = (1, "The pedal's own mics listen to the room, and to the music to find the key.")
+    elif mic == "roomsense":
+        out[28] = (2, "The pedal's built-in microphones become the input. You will hear it in headphones only.")
+
+    if ask.get("wireless") == "yes":
+        out[36] = (0, "A wireless receiver already sends a strong signal, so no extra boost is needed.")
+    elif ask.get("wireless") == "no":
+        out[36] = (1, "A microphone straight into the pedal is quieter, so it gets a little boost. "
+                      "If the input light sits red while you sing loudly, set this back to Off.")
+
+    outputs = ask.get("outputs")
+    if outputs == "separate":
+        out[6] = (1, "Your dry voice goes out the Left socket and the effects out the Right one, "
+                     "which is what the sound engineer asked for. Both cables must be plugged in.")
+    elif outputs in ("one", "two", "phones"):
+        out[6] = (0, "Everything you hear goes to both outputs. On Mono a single cable carries the dry "
+                     "voice only, which is why the effects seemed to do nothing.")
+
+    if aux == "band":
+        out[31] = (0, "A live feed from the band, which the pedal can also use to find the key.")
+        out[32] = (0, "The band is already in the PA, so the pedal doesn't send it out again.")
+    elif aux == "tracks":
+        out[31] = (1, "Pre-recorded music, which the pedal follows for the key.")
+        out[32] = (1, "So the audience hears the tracks. Turn it off if the tracks reach the PA another way.")
+    elif aux == "monitor":
+        out[31] = (2, "You hear what's plugged in, but the pedal doesn't use it to work out the key.")
+        out[32] = (0, "It stays in your headphones instead of going to the PA.")
+
+    if ask.get("key") == "myself":
+        out[17] = (1, "The key you set stays put when you change presets.")
+        out[22] = (1, "Pressing both footswitches together sets the key.")
+    elif ask.get("key") == "follow":
+        out[17] = (0, "Each song's key is worked out from the music instead of being held.")
+        if aux in ("band", "tracks"):
+            pass  # the Aux feed above already gives the pedal the music
+        elif mic != "roomsense":
+            out[28] = (1, "The pedal's own microphones listen to the band to work out the key.")
+
+    switch3 = ask.get("switch3")
+    if switch3 == "loop":
+        out[37] = (0, "The three buttons run the looper.")
+    elif switch3 == "effects":
+        out[37] = (1, "The three buttons do what you choose below.")
+        out[40] = (6, "First button: harmony on and off.")
+        out[41] = (7, "Second button: delay on and off.")
+        out[42] = (12, "Third button: reverb on and off.")
+
+    mp75 = {"hit": 0, "talk": 1, "preset": 2, "loop": 3}.get(ask.get("mp75button"))
+    if mp75 is not None:
+        out[20] = (mp75, "What the button on the microphone does.")
+    if ask.get("mp76buttons") == "default":
+        out[48] = (0, "The four buttons go back to the layout the microphone came with.")
+
+    # True whatever the answers: these two silently spoil the sound when they're left on.
+    out[19] = (0, "Your own voice is heard, not only the harmonies and effects.")
+    if aux != "tracks":
+        out[35] = (0, "Vocal Cancel only makes sense for karaoke tracks, and it thins out everything else.")
+    return out
+
+
+def setup_text(index, value):
+    """How a setup value reads on screen."""
+    label, kind, extra = SETUP_FIELDS[index]
+    if kind in ("choice", "onoff"):
+        return extra[value] if 0 <= value < len(extra) else str(value)
+    if kind == "percent":
+        return "off" if index == 8 and value == 0 else f"{value} %"
+    if kind == "locut":
+        return f"{round(20 * 2 ** (value / 24))} Hz"
+    if kind == "hz2":
+        return f"{value / 2:.1f} Hz"
+    return f"{value}{f' {extra}' if extra else ''}"
+
+
+def rig_plan(answers, values):
+    """What would change on the pedal, in the order the Setup pages show it. Settings already right are left out."""
+    wanted = _rig_settings(answers)
+    order = [i for _, _, _, fields in SETUP_PAGES for i, _, _, _ in fields]
+    plan = []
+    for index in order:
+        if index not in wanted:
+            continue
+        value, reason = wanted[index]
+        if not setup_value_ok(index, value) or values[index] == value:
+            continue
+        plan.append({"index": index, "label": SETUP_FIELDS[index][0], "value": value, "reason": reason,
+                     "from": setup_text(index, values[index]), "to": setup_text(index, value)})
+    return plan
+
+
 def setup_value_ok(index, value):
     if index not in SETUP_FIELDS:
         return False
@@ -249,6 +407,7 @@ def setup_value_ok(index, value):
 
 def as_json():
     return {
+        "rig": RIG_QUESTIONS,
         "setup": [{"id": i, "title": t, "help": h,
                    "fields": [{"index": x, "label": l, "kind": k, "help": SETUP_HELP.get(x, ""),
                                "options": e if k in ("choice", "onoff") else None,

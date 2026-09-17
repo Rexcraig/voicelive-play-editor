@@ -261,11 +261,20 @@ def setup_changes(values, index, value):
 
 
 def write_setup(index, value):
-    """Change one setup setting. Returns (ok, values now on the pedal, message)."""
+    return write_setup_many({index: value})
+
+
+def write_setup_many(pairs):
+    """Change one or more setup settings in one go. Returns (ok, values now on the pedal, message)."""
     with PedalLink() as link:
         packets = _setup_packets(link)
     values = _setup_values(packets)
-    changes = setup_changes(values, index, value)
+    working, changes = list(values), {}
+    for index, value in pairs.items():  # each setting sees what the ones before it did (RoomSense, last mic)
+        step = setup_changes(working, index, value)
+        changes.update(step)
+        for i, v in step.items():
+            working[i] = v
     per = (len(packets[0]) - 12) // 4
     for i, v in changes.items():
         p, k = divmod(i, per)
@@ -288,9 +297,10 @@ def write_setup(index, value):
     now = read_setup()
     if all(now[i] == v for i, v in changes.items()):
         return True, now, "sent"
-    label = spec.SETUP_FIELDS[index][0]
+    missed = [spec.SETUP_FIELDS[i][0] for i in pairs if i in spec.SETUP_FIELDS and now[i] != changes.get(i, now[i])]
+    names = ", ".join(missed) or spec.SETUP_FIELDS[sorted(pairs)[0]][0]
     why = "didn't confirm the change" if not acked else "kept a different value"
-    return False, now, f"The pedal {why} for {label}. The screen shows what it holds now."
+    return False, now, f"The pedal {why} for {names}. The screen shows what it holds now."
 
 
 def pedal_answers():
@@ -554,6 +564,28 @@ class Handler(BaseHTTPRequestHandler):
             if not presets or start < 1 or start + len(presets) - 1 > CAPACITY:
                 return self._send(400, {"ok": False, "message": f"The set has to fit in presets 1 to {CAPACITY}."})
             return self._send(200, load_set(body.get("set_name", "set"), start, presets))
+        if self.path == "/api/setup/rig":
+            answers = body.get("answers") or {}
+            try:
+                with lock:
+                    values = read_setup()
+                    plan = spec.rig_plan(answers, values)
+                    if not body.get("apply"):
+                        return self._send(200, {"ok": True, "plan": plan, "values": values})
+                    offered = {p["index"]: p["value"] for p in plan}
+                    asked = body.get("changes")
+                    changes = {int(i): int(v) for i, v in asked.items()} if asked is not None else offered
+                    if any(offered.get(i) != v for i, v in changes.items()):  # only ever what was shown
+                        return self._send(400, {"ok": False, "message": "Those aren't the settings that were offered. "
+                                                                        "Answer the questions again."})
+                    if not changes:
+                        return self._send(200, {"ok": True, "plan": [], "values": values,
+                                                "message": "The pedal is already set up that way."})
+                    ok, values, message = write_setup_many(changes)
+                    left = spec.rig_plan(answers, values)
+            except PedalError as e:
+                return self._send(503, {"ok": False, "message": str(e)})
+            return self._send(200 if ok else 502, {"ok": ok, "values": values, "plan": left, "message": message})
         if self.path == "/api/setup":
             index, value = int(body.get("index", -1)), int(body.get("value", 0))
             if not spec.setup_value_ok(index, value):

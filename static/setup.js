@@ -231,3 +231,145 @@ addEventListener("scroll", hideTip, true);
 addEventListener("pointerdown", (e) => { if (tip.open && !e.target.closest(".info")) hideTip(); });
 
 $("#setup-refresh").onclick = () => openSetupTab(true);
+
+// "Set up my rig": a few questions about how the pedal is plugged in, then the settings that follow from
+// the answers, each with its reason. Asking only reads the pedal; nothing is written until "Apply".
+const rig = { answers: {}, plan: [], busy: false };
+
+const rigQuestions = () => state.spec.rig.filter((q) => Object.entries(q.when || {}).every(([k, v]) => v.includes(rig.answers[k])));
+
+function openRig() {
+  rig.answers = {};
+  rig.plan = [];
+  $("#rig-result").textContent = "";
+  $("#rig-cancel").textContent = "Cancel";
+  $("#rig-plan-wrap").hidden = true;
+  renderRig();
+  $("#rig-dialog").showModal();
+}
+
+function renderRig() {
+  const root = $("#rig-questions");
+  root.innerHTML = "";
+  rigQuestions().forEach((q) => {
+    const block = el("fieldset", "rig-q");
+    const legend = el("legend", null, q.question);
+    if (q.note) legend.append(el("span", "rig-note", q.note));
+    block.append(legend);
+    const opts = el("div", "rig-opts");
+    q.options.forEach((o) => {
+      const label = el("label", "rig-opt");
+      const input = el("input");
+      input.type = "radio";
+      input.name = `rig-${q.id}`;
+      input.setAttribute("aria-label", o.label);
+      input.checked = rig.answers[q.id] === o.id;
+      input.onchange = () => answerRig(q.id, o.id);
+      const text = el("span", "rig-opt-text");
+      text.append(el("strong", null, o.label));
+      if (o.note) text.append(el("span", "rig-note", o.note));
+      label.append(input, text);
+      opts.append(label);
+    });
+    block.append(opts);
+    root.append(block);
+  });
+}
+
+async function answerRig(id, value) {
+  rig.answers[id] = value;
+  // A different mic can add or remove later questions, so redraw before asking the pedal what would change.
+  renderRig();
+  $("#rig-result").textContent = "";
+  const asked = rigQuestions();
+  if (asked.some((q) => !rig.answers[q.id])) {
+    $("#rig-plan-wrap").hidden = true;
+    $("#rig-go").disabled = true;
+    $("#rig-summary").textContent = "";
+    return;
+  }
+  $("#rig-summary").textContent = "Reading the pedal…";
+  $("#rig-plan-wrap").hidden = false;
+  const answers = Object.fromEntries(asked.map((q) => [q.id, rig.answers[q.id]]));
+  const data = await api("/api/setup/rig", { answers });
+  if (!data.ok) {
+    $("#rig-summary").textContent = data.message;
+    return;
+  }
+  if (data.values) setup.values = data.values;
+  rig.plan = data.plan;
+  renderRigPlan();
+}
+
+function renderRigPlan() {
+  const table = $("#rig-plan");
+  table.innerHTML = "";
+  const head = el("tr");
+  ["", "Setting", "Now", "Becomes", "Why"].forEach((h) => head.append(el("th", null, h)));
+  table.append(head);
+  rig.plan.forEach((row, i) => {
+    const tr = el("tr");
+    const tick = el("td", "tick");
+    const box = el("input");
+    box.type = "checkbox";
+    box.checked = row.keep !== false;
+    box.id = `rig-row-${i}`;
+    box.setAttribute("aria-label", `Change ${row.label}`);
+    box.onchange = () => { row.keep = box.checked; updateRigButton(); };
+    tick.append(box);
+    tr.append(tick);
+    const name = el("td", "name");
+    const label = el("label", null, row.label);
+    label.htmlFor = box.id;
+    name.append(label);
+    tr.append(name, el("td", "was", row.from), el("td", "now", row.to), el("td", "why", row.reason));
+    table.append(tr);
+  });
+  const n = rig.plan.length;
+  $("#rig-summary").textContent = n
+    ? `${n} setting${n === 1 ? "" : "s"} would change. Everything else on the pedal is already right for this rig.`
+    : "Nothing to change: the pedal is already set up that way.";
+  $("#rig-plan-wrap").hidden = false;
+  $("#rig-untick").hidden = !n;
+  updateRigButton();
+}
+
+function updateRigButton() {
+  const picked = rig.plan.filter((r) => r.keep !== false).length;
+  const go = $("#rig-go");
+  go.disabled = !picked || rig.busy;
+  go.textContent = picked ? `Apply ${picked} change${picked === 1 ? "" : "s"}` : "Nothing to apply";
+}
+
+$("#rig-open").onclick = () => { if (setup.values) openRig(); else openSetupTab().then(() => setup.values && openRig()); };
+$("#rig-dialog").addEventListener("cancel", (e) => { if (rig.busy) e.preventDefault(); });
+$("#rig-go").onclick = async () => {
+  const chosen = rig.plan.filter((r) => r.keep !== false);
+  if (!chosen.length) return;
+  rig.busy = true;
+  updateRigButton();
+  $("#rig-cancel").disabled = true;
+  $("#rig-result").textContent = "Sending to the pedal…";
+  const asked = rigQuestions();
+  const data = await api("/api/setup/rig", {
+    answers: Object.fromEntries(asked.map((q) => [q.id, rig.answers[q.id]])),
+    apply: true,
+    changes: Object.fromEntries(chosen.map((r) => [r.index, r.value])),
+  });
+  rig.busy = false;
+  $("#rig-cancel").disabled = false;
+  $("#rig-cancel").textContent = "Close";
+  blinkTx(data.ok);
+  if (data.values) {
+    setup.values = data.values;
+    renderSetup();
+  }
+  const sent = chosen.length;
+  rig.plan = data.plan || [];
+  renderRigPlan();
+  const left = rig.plan.length;  // whatever is still different: the rows left unticked
+  $("#rig-result").textContent = data.ok
+    ? `Done: ${sent} setting${sent === 1 ? "" : "s"} changed on the pedal.`
+      + (left ? " What's still listed is what you left unticked; tick and apply it whenever you like." : "")
+    : data.message;
+};

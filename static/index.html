@@ -69,7 +69,10 @@
       <strong>Whole-pedal settings</strong>
       <p id="setup-source">These apply to every preset, the same as the pedal's own Setup button. Each change goes to the pedal straight away.</p>
     </div>
-    <button class="ghost" id="setup-refresh">Read pedal</button>
+    <div class="notice-buttons">
+      <button class="ghost" id="rig-open">Set up my rig</button>
+      <button class="ghost" id="setup-refresh">Read pedal</button>
+    </div>
   </div>
   <p id="setup-msg" class="setup-msg" hidden></p>
   <div class="setup-grid" id="setup-pages"></div>
@@ -136,6 +139,25 @@
     <div class="actions">
       <button value="cancel" id="load-cancel">Cancel</button>
       <button type="button" class="primary" id="load-go" disabled>Load onto pedal</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="rig-dialog">
+  <form method="dialog">
+    <h2>Set up my rig</h2>
+    <p id="rig-intro">A few questions about how the pedal is plugged in. Nothing reaches the pedal until you press the button at the end.</p>
+    <div id="rig-questions"></div>
+    <div id="rig-plan-wrap" hidden>
+      <h3>What would change</h3>
+      <p id="rig-summary"></p>
+      <div class="plan-wrap"><table id="rig-plan"></table></div>
+      <p class="rig-note" id="rig-untick">Untick anything you'd rather keep as it is.</p>
+    </div>
+    <p id="rig-result"></p>
+    <div class="actions">
+      <button value="cancel" id="rig-cancel">Cancel</button>
+      <button type="button" class="primary" id="rig-go" disabled>Apply to the pedal</button>
     </div>
   </form>
 </dialog>
