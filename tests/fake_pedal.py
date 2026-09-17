@@ -28,6 +28,10 @@ class FakePedal:
         self.pending = None
         self.drop_ack_for = set()  # simulate a lost ack
         self.corrupt_slots = set()  # simulate a bad write: stores different params
+        self.garble_next_reads = 0  # damage the next N preset replies (checksum mismatch)
+        self.silent_after_writes = None  # stop answering entirely after this many saves
+        self.stray_packet_before_reply = False  # send a lone 0x21 packet before answering a read
+        self.writes = 0
         self.name_filter = pedal_name  # measured on the real unit
 
     def reply(self, msg):
@@ -36,6 +40,8 @@ class FakePedal:
 
     def receive(self, msg):
         self.log.append(list(msg))
+        if self.silent_after_writes is not None and self.writes >= self.silent_after_writes:
+            return
         if msg == [0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7]:
             return self.reply(IDENTITY_REPLY)
         if msg[:6] != HEAD:
@@ -46,7 +52,12 @@ class FakePedal:
             p = self.slots.get(slot)
             if not p:
                 return self.reply(HEAD + [0x34, 0x02, 0x00, 0x00, 0xF7])
-            data = build_syx(slot, p["name"], p["tags"], p["params"])
+            data = bytearray(build_syx(slot, p["name"], p["tags"], p["params"]))
+            if self.stray_packet_before_reply:
+                self.reply(list(data[32:32 + 110]))
+            if self.garble_next_reads:
+                self.garble_next_reads -= 1
+                data[32 + 20] ^= 0x01
             start = 0
             for i, b in enumerate(data):
                 if b == 0xF7:
@@ -67,6 +78,7 @@ class FakePedal:
                 if slot in self.corrupt_slots:
                     params[9] = params[9] - 1
                 self.slots[slot] = {"name": self.name_filter(p["name"]), "tags": p["tags"], "params": params}
+                self.writes += 1
                 if slot not in self.drop_ack_for:
                     self.reply(HEAD + [0x34, 0x01, (slot >> 7) & 0x7F, slot & 0x7F, 0xF7])
 

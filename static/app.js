@@ -133,14 +133,27 @@ function push() {
   state.timer = setTimeout(send, 120);
 }
 
-async function send() {
-  const body = { name: $("#preset-name").value, values: state.values, tags: state.tags, slot: 0 };
-  const res = await fetch("/api/send", { method: "POST", body: JSON.stringify(body) });
-  const data = await res.json();
-  hint(data.ok ? "" : data.message);
+// Every call to the editor's server goes through here, so a dropped connection or a bad reply
+// becomes a message on screen instead of a button stuck on "Saving…".
+async function api(path, body) {
+  try {
+    const res = await fetch(path, body === undefined ? {} : { method: "POST", body: JSON.stringify(body) });
+    return await res.json();
+  } catch {
+    return { ok: false, message: "The editor lost contact with its server. Check that the Terminal window is still open, then try again." };
+  }
 }
 
-function hint(text) { $("#hint").textContent = text; }
+async function send() {
+  const data = await api("/api/send", { name: $("#preset-name").value, values: state.values, tags: state.tags });
+  if (!data.ok) hint(data.message, "live");
+  else if (state.hintSource === "live") hint("");  // clear only our own old error, never a save result
+}
+
+function hint(text, source = "action") {
+  $("#hint").textContent = text;
+  state.hintSource = source;
+}
 
 async function poll() {
   try {
@@ -173,7 +186,7 @@ async function readPedal() {
   btn.disabled = true;
   btn.textContent = "Reading… about 10 s";
   try {
-    const data = await (await fetch("/api/pedal/read", { method: "POST" })).json();
+    const data = await api("/api/pedal/read", {});
     if (data.ok) await loadPedal();
     else $("#sync-detail").textContent = data.message;
   } finally {
@@ -183,7 +196,9 @@ async function readPedal() {
 }
 
 async function loadPedal() {
-  state.pedal = await (await fetch("/api/pedal")).json();
+  const data = await api("/api/pedal");
+  if (data.ok === false) return hint(data.message);
+  state.pedal = data;
   const p = state.pedal;
   $("#pedal-source").innerHTML = p.synced
     ? `${p.presets.length} presets and <span class="empty-count">${p.capacity - p.presets.length} empty slots</span>.` : "";
@@ -307,7 +322,7 @@ async function checkSlot() {
   $("#save-confirm").disabled = true;
   await new Promise((r) => setTimeout(r, 250));
   if (check !== slotCheck) return;
-  const data = await (await fetch(`/api/pedal/slot/${slot}`)).json();
+  const data = await api(`/api/pedal/slot/${slot}`);
   if (check !== slotCheck) return;
   if (data.ok) {
     state.pedal.presets = state.pedal.presets.filter((p) => p.slot !== slot);
@@ -335,15 +350,22 @@ function describeSlot({ live = false } = {}) {
 
 $("#save").onclick = openSave;
 $("#save-slot").oninput = checkSlot;
+$("#save-slot").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();  // the form's first button is Cancel, so Enter would otherwise cancel
+  if (!$("#save-confirm").disabled) $("#save-confirm").click();
+});
 $("#save-empty").onclick = () => { $("#save-slot").value = firstEmpty(); checkSlot(); };
-$("#save-dialog").onclose = async () => {
-  if ($("#save-dialog").returnValue !== "save") return;
+$("#save-confirm").onclick = async (e) => {
+  e.preventDefault();
+  if ($("#save-confirm").disabled) return;
   const slot = +$("#save-slot").value;
+  $("#save-dialog").close();
   hint(`Saving to preset ${slot}…`);
-  const body = { name: $("#preset-name").value, values: state.values, tags: state.tags, slot };
-  const data = await (await fetch("/api/save", { method: "POST", body: JSON.stringify(body) })).json();
+  const data = await api("/api/save", { name: $("#preset-name").value, values: state.values, tags: state.tags, slot });
   hint(data.message);
-  if (data.ok) { state.slot = slot; await loadPedal(); }
+  if (data.ok) state.slot = slot;
+  await loadPedal();
 };
 
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));

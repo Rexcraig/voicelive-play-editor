@@ -338,7 +338,7 @@ async function planLoad() {
   $("#load-summary").textContent = `Checking presets ${start}–${start + presets.length - 1} on the pedal…`;
   await new Promise((r) => setTimeout(r, 250));
   if (check !== planCheck) return;
-  const data = await (await fetch("/api/pedal/range", { method: "POST", body: JSON.stringify({ start, count: presets.length }) })).json();
+  const data = await api("/api/pedal/range", { start, count: presets.length });
   if (check !== planCheck) return;
   if (!data.ok) return ($("#load-summary").textContent = data.message);
 
@@ -370,28 +370,32 @@ async function planLoad() {
 }
 
 $("#load-start").oninput = planLoad;
+$("#load-start").addEventListener("keydown", (e) => { if (e.key === "Enter") e.preventDefault(); });
+// Escape would hide the dialog while presets are still being written; keep it open until the load finishes.
+$("#load-dialog").addEventListener("cancel", (e) => { if (sets.loading) e.preventDefault(); });
 $("#load-go").onclick = async () => {
   const set = currentSet();
   const { start, presets } = sets.plan;
   const go = $("#load-go");
   go.disabled = true;
+  sets.loading = true;
   $("#load-start").disabled = true;
+  $("#load-cancel").disabled = true;
   go.textContent = "Loading…";
-  $("#load-result").textContent = `Writing and checking each preset. About ${Math.max(1, Math.round(presets.length * 0.2))} s.`;
-  let data;
-  try {
-    data = await (await fetch("/api/sets/load", { method: "POST", body: JSON.stringify({ set_name: set.name, start, presets }) })).json();
-  } finally {
-    $("#load-start").disabled = false;
-  }
+  $("#load-result").textContent = `Writing and checking each preset. About ${Math.max(1, Math.round(presets.length * 0.2))} s. Keep the pedal connected.`;
+  const data = await api("/api/sets/load", { set_name: set.name, start, presets });
+  sets.loading = false;
+  $("#load-start").disabled = false;
+  $("#load-cancel").disabled = false;
+  $("#load-cancel").textContent = "Close";
   if (data.ok) {
     set.start = start;
     saveSets();
     const backup = data.backups ? ` Replaced presets are backed up in backups/${data.backups}.` : "";
     $("#load-result").textContent = `Done: presets ${start}–${start + presets.length - 1} now hold this set.${backup}`;
-    $("#load-cancel").textContent = "Close";
   } else {
-    $("#load-result").textContent = data.message;
+    const backup = data.backups ? ` Presets it replaced are backed up in backups/${data.backups}.` : "";
+    $("#load-result").textContent = data.message + backup;
   }
   state.pedal = null;
   await loadPedal();

@@ -23,32 +23,45 @@ class PedalLinkTests(ServerTest):
     def test_write_is_verified_by_reading_back(self):
         right = fixture_presets()[2]
         with server.PedalLink() as link:
-            self.assertTrue(link.write(10, right["name"], right["tags"], right["params"]))
+            ok, back = link.write(10, right["name"], right["tags"], right["params"])
+            self.assertTrue(ok)
+            self.assertEqual(back["params"], right["params"])
         self.assertEqual(self.pedal.slots[10]["params"], right["params"])
 
     def test_write_that_lands_wrong_is_reported(self):
         right = fixture_presets()[2]
         self.pedal.corrupt_slots.add(10)
         with server.PedalLink() as link:
-            self.assertFalse(link.write(10, right["name"], right["tags"], right["params"]))
+            self.assertFalse(link.write(10, right["name"], right["tags"], right["params"])[0])
 
     def test_write_without_ack_is_reported(self):
         right = fixture_presets()[2]
         self.pedal.drop_ack_for.add(10)
         with server.PedalLink() as link:
-            self.assertFalse(link.write(10, right["name"], right["tags"], right["params"]))
+            self.assertFalse(link.write(10, right["name"], right["tags"], right["params"])[0])
 
     def test_unplugged_pedal_raises_clear_error(self):
         self.pedal.connected = False
-        with self.assertRaisesRegex(ConnectionError, "not found"):
+        with self.assertRaisesRegex(server.PedalError, "not found"):
             with server.PedalLink():
                 pass
 
     def test_silent_pedal_times_out(self):
         self.pedal.receive = lambda msg: None
         with server.PedalLink() as link:
-            with self.assertRaises(TimeoutError):
+            with self.assertRaises(server.PedalError):
                 link.read(1)
+
+    def test_garbled_reply_is_retried(self):
+        self.pedal.garble_next_reads = 1
+        with server.PedalLink() as link:
+            self.assertEqual(link.read(1)["name"], "TREAT ME RIGHT")
+
+    def test_stray_packet_before_reply_is_ignored(self):
+        self.pedal.stray_packet_before_reply = True
+        with server.PedalLink() as link:
+            self.assertEqual(link.read(2)["name"], "TREAT ME CHORUS")
+            self.assertIsNone(link.read(300))
 
     def test_status_reflects_real_connection(self):
         self.assertEqual(self.get("/api/status"), (200, {"connected": True}))
@@ -103,7 +116,7 @@ class SaveTests(ServerTest):
         self.pedal.drop_ack_for.add(20)
         status, r = self.post("/api/save", {"slot": 20, "name": "X", "values": {}})
         self.assertEqual((status, r["ok"]), (503, False))
-        self.assertFalse(server.SAVES.exists())
+        self.assertEqual(server.slot_log()["20"]["kind"], "read", "an unconfirmed save must not be listed as saved")
 
     def test_saved_preset_shows_in_pedal_list(self):
         self.post("/api/pedal/read")
@@ -119,6 +132,69 @@ class SaveTests(ServerTest):
         _, contents = self.get("/api/pedal")
         listed = {p["slot"]: p["name"] for p in contents["presets"]}.get(40)
         self.assertEqual(listed, self.pedal.slots[40]["name"], "editor's list should match what the pedal holds")
+
+
+class ReviewFixTests(ServerTest):
+    """Issues from the Fable review, 2026-09-16."""
+
+    def test_live_send_never_saves_even_if_asked_for_a_slot(self):
+        before = json.dumps(self.pedal.slots, sort_keys=True)
+        status, r = self.post("/api/send", {"name": "SNEAKY", "slot": 1, "values": {"32": 0}})
+        self.assertEqual(status, 200)
+        self.assertEqual(json.dumps(self.pedal.slots, sort_keys=True), before)
+        self.assertEqual(self.pedal.live["name"], "SNEAKY")
+
+    def test_save_that_lands_wrong_reports_failure_and_lists_what_pedal_holds(self):
+        self.post("/api/pedal/read")
+        self.pedal.corrupt_slots.add(20)
+        status, r = self.post("/api/save", {"slot": 20, "name": "SONG", "values": {"9": -10}})
+        self.assertEqual((status, r["ok"]), (503, False))
+        self.assertIn("didn't save correctly", r["message"])
+        listed = {p["slot"]: p for p in self.get("/api/pedal")[1]["presets"]}[20]
+        self.assertEqual(listed["params"], self.pedal.slots[20]["params"])
+        self.assertNotIn("saved", listed)
+
+    def test_newer_read_beats_older_save_in_pedal_list(self):
+        self.post("/api/pedal/read")
+        self.post("/api/save", {"slot": 5, "name": "FROM EDITOR", "values": {}})
+        time.sleep(0.01)
+        self.pedal.slots[5] = {"name": "STORED ON PEDAL", "tags": 0, "params": [0] * 50}  # Store button on the unit
+        self.get("/api/pedal/slot/5")
+        listed = {p["slot"]: p for p in self.get("/api/pedal")[1]["presets"]}[5]
+        self.assertEqual(listed["name"], "STORED ON PEDAL")
+        self.assertNotIn("saved", listed)
+
+    def test_read_showing_slot_empty_removes_it_from_list(self):
+        self.post("/api/pedal/read")
+        del self.pedal.slots[3]
+        self.post("/api/pedal/range", {"start": 3, "count": 1})
+        self.assertNotIn(3, [p["slot"] for p in self.get("/api/pedal")[1]["presets"]])
+
+    def test_garbled_pedal_gives_a_clear_error_not_a_dead_request(self):
+        self.pedal.garble_next_reads = 10
+        status, r = self.get("/api/pedal/slot/1")
+        self.assertEqual(status, 503)
+        self.assertIn("garbled", r["message"])
+        status, r = self.post("/api/save", {"slot": 1, "name": "X", "values": {}})
+        self.assertEqual((status, r["ok"]), (503, False))
+        self.assertIn("Nothing was saved", r["message"])
+        self.assertEqual(self.pedal.slots[1]["name"], "TREAT ME RIGHT")
+
+    def test_set_load_that_loses_the_pedal_midway_says_how_far_it_got(self):
+        chorus, fx, right = fixture_presets()
+        presets = [dict(name=f"SONG {i}", tags=0, params=[i] + [0] * 49) for i in range(5)]
+        self.pedal.silent_after_writes = 3  # 20 and 21 verified; 22 written, then the pedal stops answering
+        status, r = self.post("/api/sets/load", {"set_name": "Gig", "start": 20, "presets": presets})
+        self.assertFalse(r["ok"])
+        self.assertEqual(r["written"], [20, 21])
+        self.assertEqual(r["failed"], 22)
+        self.assertIn("Presets 20–21 are loaded", r["message"])
+
+    def test_set_load_with_no_pedal_changes_nothing(self):
+        self.pedal.connected = False
+        status, r = self.post("/api/sets/load", {"set_name": "Gig", "start": 20, "presets": [dict(name="A", tags=0, params=[0] * 50)]})
+        self.assertFalse(r["ok"])
+        self.assertIn("No presets were changed", r["message"])
 
 
 class LiveSendTests(ServerTest):

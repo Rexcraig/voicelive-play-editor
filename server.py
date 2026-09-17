@@ -25,7 +25,8 @@ SAVES = HERE / "saves.json"  # slots this editor has written since VoiceSupport'
 # Off-machine copy of the singer's data (sets, save log, preset backups). Skipped when the drive isn't mounted.
 DATA_BACKUP = pathlib.Path("/Volumes/Dock1/VoiceLivePlay/data")
 KEEP_SET_VERSIONS = 100
-lock = threading.Lock()
+lock = threading.Lock()  # one conversation with the pedal at a time
+files_lock = threading.RLock()  # saves.json / pedal_cache.json read-modify-write
 backup_timer = None
 
 
@@ -87,19 +88,37 @@ def voicesupport_sync():
 
 
 def pedal_contents():
-    """Newest known picture of the pedal (direct read or VoiceSupport sync), plus editor saves made since."""
+    """Newest known picture of the pedal: a full read or VoiceSupport sync, updated by every later save or
+    single-slot read the editor made (so a newer read of a slot always beats an older save to it)."""
     sources = [s for s in (voicesupport_sync(), json.loads(PEDAL_CACHE.read_text()) if PEDAL_CACHE.exists() else None) if s]
     if not sources:
         return {"synced": None, "source": None, "presets": [], "capacity": CAPACITY}
     base = max(sources, key=lambda s: s["time"])
     by_slot = {p["slot"]: dict(p) for p in base["presets"]}
-    saves = json.loads(SAVES.read_text()) if SAVES.exists() else {}
-    for slot, saved in saves.items():
-        if saved["time"] > base["time"] and 1 <= int(slot) <= CAPACITY:
-            by_slot.setdefault(int(slot), {"slot": int(slot)}).update(
-                name=saved["name"], params=saved["params"], saved=saved["time"] * 1000, tags=saved.get("tags", TAGS))
+    for slot, entry in sorted(slot_log().items(), key=lambda kv: kv[1]["time"]):
+        slot = int(slot)
+        if entry["time"] <= base["time"] or not 1 <= slot <= CAPACITY:
+            continue
+        if entry["preset"] is None:
+            by_slot.pop(slot, None)
+        else:
+            by_slot[slot] = {**entry["preset"], "slot": slot}
+            if entry["kind"] == "saved":
+                by_slot[slot]["saved"] = entry["time"] * 1000
     return {"synced": base["time"] * 1000, "source": base["source"],
             "presets": sorted(by_slot.values(), key=lambda x: x["slot"]), "capacity": CAPACITY}
+
+
+def slot_log():
+    """saves.json: {slot: {time, kind: "saved"|"read", preset or None}}. Older files stored bare saves."""
+    raw = json.loads(SAVES.read_text()) if SAVES.exists() else {}
+    return {slot: e if "kind" in e else {"time": e["time"], "kind": "saved",
+                                         "preset": {k: e[k] for k in ("name", "params", "tags") if k in e}}
+            for slot, e in raw.items()}
+
+
+class PedalError(Exception):
+    """The pedal is missing, silent, or sent something unreadable. The message is written for the singer."""
 
 
 class PedalLink:
@@ -109,7 +128,7 @@ class PedalLink:
     def __enter__(self):
         self.out, self.inp = rtmidi.MidiOut(), rtmidi.MidiIn()
         if DEVICE not in self.out.get_ports():
-            raise ConnectionError("VoiceLive Play not found. Check the USB cable, and close VoiceSupport if it's open.")
+            raise PedalError("VoiceLive Play not found. Check the USB cable, and close VoiceSupport if it's open.")
         self.out.open_port(self.out.get_ports().index(DEVICE))
         self.inp.ignore_types(sysex=False)
         self.inp.open_port(self.inp.get_ports().index(DEVICE))
@@ -117,12 +136,26 @@ class PedalLink:
         return self
 
     def __exit__(self, *exc):
-        self.out.send_message(self.HEAD + [0x57, 0x00, 0x01, 0xF7])  # end session
-        self.inp.close_port()
-        self.out.close_port()
+        try:
+            self.out.send_message(self.HEAD + [0x57, 0x00, 0x01, 0xF7])  # end session
+        finally:
+            self.inp.close_port()
+            self.out.close_port()
+
+    def drain(self):
+        while self.inp.get_message():
+            pass
 
     def read(self, slot):
-        """Preset dict for `slot`, or None if the slot is empty."""
+        """Preset dict for `slot`, or None if the slot is empty. Retries once if the reply is garbled."""
+        for attempt in (1, 2):
+            try:
+                return self._read_once(slot)
+            except ValueError:
+                self.drain()
+        raise PedalError(f"The pedal's answer for preset {slot} was garbled twice. Try again, or reconnect the USB cable.")
+
+    def _read_once(self, slot):
         self.out.send_message(self.HEAD + [0x45, (slot >> 7) & 0x7F, slot & 0x7F, 0xF7])
         msgs, deadline = [], time.time() + 1.5
         while time.time() < deadline:
@@ -131,20 +164,24 @@ class PedalLink:
                 time.sleep(0.002)
                 continue
             m = m[0]
-            if m[:6] != self.HEAD:
+            if m[:6] != self.HEAD or len(m) < 8:
                 continue
-            if m[6] == 0x34 and not msgs:
-                return None  # empty slot: 34 02 00 00
-            if m[6] in (0x20, 0x21):
+            if m[6] == 0x34 and m[7] == 0x02 and not msgs:
+                return None  # empty slot: 34 02 00 00 (34 01 .. is a save ack, not an answer)
+            if m[6] == 0x20:
+                msgs = [bytes(m)]  # a header starts a preset; anything before it is stray
+            elif m[6] == 0x21 and msgs:
                 msgs.append(bytes(m))
-            if m[6] == 0x21 and m[7] == 1:
-                p = parse_syx(b"".join(msgs))[0]
-                return {"slot": slot, "name": p["name"], "params": p["params"], "tags": p["tags"]}
-        raise TimeoutError(f"The pedal didn't answer when asked for preset {slot}.")
-
+                if m[7] == 1:
+                    p = parse_syx(b"".join(msgs))[0]  # ValueError if damaged
+                    return {"slot": slot, "name": p["name"], "params": p["params"], "tags": p["tags"]}
+        raise PedalError(f"The pedal didn't answer when asked for preset {slot}.")
 
     def write(self, slot, name, tags, params):
-        """Store a preset in `slot`, then read it back. Returns True only if the pedal holds exactly that preset."""
+        """Save a preset in `slot`, then read it back. Returns (ok, what the pedal now holds or None).
+        ok is True only if the pedal acknowledged and holds exactly that preset."""
+        name, params = pedal_name(name), [int(v) for v in params]
+        self.drain()
         data = build_syx(slot, name, tags, params)
         msg = []
         for byte in data:
@@ -153,15 +190,16 @@ class PedalLink:
                 self.out.send_message(msg)
                 msg = []
         ack = self.HEAD + [0x34, 0x01, (slot >> 7) & 0x7F, slot & 0x7F, 0xF7]
-        deadline = time.time() + 2
-        while time.time() < deadline:
+        deadline, acked = time.time() + 2, False
+        while time.time() < deadline and not acked:
             m = self.inp.get_message()
             if not m:
                 time.sleep(0.002)
-            elif m[0] == ack:
-                back = self.read(slot)
-                return bool(back) and back["name"] == name and back["params"] == list(params) and back["tags"] == tags
-        return False
+            else:
+                acked = m[0] == ack
+        back = self.read(slot)
+        ok = acked and back is not None and (back["name"], back["params"], back["tags"]) == (name, params, tags)
+        return ok, back
 
 
 def pedal_answers():
@@ -208,6 +246,18 @@ def refresh_cached_slot(slot, preset):
     PEDAL_CACHE.write_text(json.dumps(cache))
 
 
+def note_slot(slot, preset, kind):
+    """Record what the pedal holds in `slot` right now (from a save or a read), for the pedal list."""
+    with files_lock:
+        log = slot_log()
+        stored = {k: preset[k] for k in ("name", "params", "tags")} if preset else None
+        log[str(slot)] = {"time": time.time(), "kind": kind, "preset": stored}
+        SAVES.write_text(json.dumps(log))
+        refresh_cached_slot(slot, {**stored, "slot": slot} if stored else None)
+    if kind == "saved":
+        schedule_backup()
+
+
 def unique_path(path):
     """`path`, or `path` with " 2", " 3"... added, so an existing backup is never overwritten."""
     candidate, n = path, 2
@@ -221,85 +271,86 @@ def safe_filename(text):
     return "".join(c if c.isalnum() or c in " -" else "_" for c in text).strip() or "untitled"
 
 
+def backup_preset(path, slot, preset):
+    path = unique_path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(build_syx(slot, preset["name"], preset["tags"], preset["params"]))
+    return path
+
+
+def save_preset(slot, name, tags, params):
+    """Save one preset: back up what's there (straight from the pedal), write, verify. Never writes without the backup."""
+    with lock:
+        try:
+            with PedalLink() as link:
+                old = link.read(slot)
+                backup = old and backup_preset(
+                    BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} preset {slot} {safe_filename(old['name'])}.syx", slot, old)
+                try:
+                    ok, back = link.write(slot, name, tags, params)
+                except PedalError as e:
+                    return {"ok": False, "message": f"{e} Preset {slot} may have changed: check it on the pedal."}
+        except PedalError as e:
+            return {"ok": False, "message": f"{e} Nothing was saved."}
+        if back is not None:
+            note_slot(slot, back, "saved" if ok else "read")
+    kept = f" The old {old['name']} is backed up in backups/{backup.name}." if backup else ""
+    if ok:
+        return {"ok": True, "message": f"Saved to preset {slot}.{kept}"}
+    return {"ok": False, "message": f"Preset {slot} didn't save correctly. Check it on the pedal.{kept}"}
+
+
 def load_set(set_name, start, presets):
-    """Write `presets` into slots start, start+1, ... Backs up every preset it replaces; stops at the first failure."""
+    """Write `presets` into slots start, start+1, ... Backs up every preset it replaces, verifies each,
+    and stops at the first problem, saying exactly how far it got."""
     folder = unique_path(BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} before set {safe_filename(set_name)}")
-    written, unchanged = [], []
-    with lock, PedalLink() as link:
-        for offset, p in enumerate(presets):
-            slot = start + offset
-            name, tags, params = pedal_name(p["name"]), int(p["tags"]), [int(v) for v in p["params"]]
-            old = link.read(slot)
-            if old and old["name"] == name and old["tags"] == tags and old["params"] == params:
-                unchanged.append(slot)
-                continue
-            if old:
-                folder.mkdir(parents=True, exist_ok=True)
-                unique_path(folder / f"preset {slot:03d} {safe_filename(old['name'])}.syx").write_bytes(
-                    build_syx(slot, old["name"], old["tags"], old["params"]))
-            if not link.write(slot, name, tags, params):
-                done = (f"Presets {start}–{slot - 1} are loaded." if slot - 1 > start
-                        else f"Preset {start} is loaded." if slot - 1 == start else "Nothing else was changed.")
-                return {"ok": False, "written": written, "unchanged": unchanged, "failed": slot,
-                        "backups": folder.name if folder.exists() else None,
-                        "message": f"Preset {slot} didn't save correctly, so loading stopped there. "
-                                   f"{done} Check preset {slot} on the pedal."}
-            written.append(slot)
-            record_save(slot, name, params, tags)
-            refresh_cached_slot(slot, {"slot": slot, "name": name, "params": params, "tags": tags})
-    return {"ok": True, "written": written, "unchanged": unchanged, "backups": folder.name if folder.exists() else None}
+    written, unchanged, slot = [], [], None
+
+    def result(ok, problem=None):
+        out = {"ok": ok, "written": written, "unchanged": unchanged, "backups": folder.name if folder.exists() else None}
+        if not ok:
+            last_done = slot - 1 if slot else start - 1
+            done = (f"Presets {start}–{last_done} are loaded." if last_done > start
+                    else f"Preset {start} is loaded." if last_done == start else "No presets were changed.")
+            out.update(failed=slot, message=f"Loading stopped at preset {slot or start}: {problem} {done}")
+        return out
+
+    try:
+        with lock, PedalLink() as link:
+            for offset, p in enumerate(presets):
+                slot = start + offset
+                name, tags, params = pedal_name(p["name"]), int(p["tags"]), [int(v) for v in p["params"]]
+                old = link.read(slot)
+                if old and (old["name"], old["tags"], old["params"]) == (name, tags, params):
+                    unchanged.append(slot)
+                    continue
+                if old:
+                    backup_preset(folder / f"preset {slot:03d} {safe_filename(old['name'])}.syx", slot, old)
+                ok, back = link.write(slot, name, tags, params)
+                if back is not None:
+                    note_slot(slot, back, "saved" if ok else "read")
+                if not ok:
+                    return result(False, f"it didn't save correctly. Check preset {slot} on the pedal.")
+                written.append(slot)
+    except PedalError as e:
+        return result(False, str(e))
+    return result(True)
 
 
-def record_save(slot, name, params, tags):
-    saves = json.loads(SAVES.read_text()) if SAVES.exists() else {}
-    saves[str(slot)] = {"name": name, "params": params, "tags": tags, "time": time.time()}
-    SAVES.write_text(json.dumps(saves))
-    schedule_backup()
-
-
-def midi_out():
-    out = rtmidi.MidiOut()
-    ports = out.get_ports()
-    if DEVICE not in ports:
-        return None
-    out.open_port(ports.index(DEVICE))
-    return out
-
-
-def send_to_box(name, params, slot=0, tags=None):
-    """Slot 0 loads into the active preset without saving; slot N permanently replaces preset N."""
-    out = midi_out()
-    if out is None:
-        return False, "VoiceLive Play not found. Check the USB cable, and close VoiceSupport if it's open."
-    inp = None
-    if slot:
-        inp = rtmidi.MidiIn()
-        inp.ignore_types(sysex=False)
-        inp.open_port(inp.get_ports().index(DEVICE))
-    data = build_syx(slot, name or "EDITOR", TAGS if tags is None else tags, params)
-    msg = []
-    for byte in data:
-        msg.append(byte)
-        if byte == 0xF7:
-            out.send_message(msg)
+def send_live(name, params, tags):
+    """Play a preset in the pedal's edit buffer (number 0). Never saves."""
+    try:
+        with PedalLink() as link:
+            data = build_syx(0, name, tags, params)
             msg = []
-            if slot:
-                time.sleep(0.05)
-    out.close_port()
-    if not slot:
-        return True, "sent"
-    # The pedal acks with 0x34 01 <slot as two 7-bit bytes>.
-    ack = [0xF0, 0x00, 0x01, 0x38, 0x00, 0x69, 0x34, 0x01, (slot >> 7) & 0x7F, slot & 0x7F, 0xF7]
-    deadline = time.time() + 2
-    while time.time() < deadline:
-        m = inp.get_message()
-        if m and m[0] == ack:
-            inp.close_port()
-            return True, f"Saved to preset {slot}."
-        if not m:
-            time.sleep(0.02)
-    inp.close_port()
-    return False, f"The pedal didn't confirm storing preset {slot}. Check preset {slot} on the pedal."
+            for byte in data:
+                msg.append(byte)
+                if byte == 0xF7:
+                    link.out.send_message(msg)
+                    msg = []
+    except PedalError as e:
+        return False, str(e)
+    return True, "sent"
 
 
 def merge(values):
@@ -339,11 +390,12 @@ class Handler(BaseHTTPRequestHandler):
             if not 1 <= slot <= CAPACITY:
                 return self._send(400, {"ok": False, "message": f"The pedal's presets are numbered 1 to {CAPACITY}."})
             try:
-                with lock, PedalLink() as link:
-                    preset = link.read(slot)
-            except (ConnectionError, TimeoutError) as e:
+                with lock:
+                    with PedalLink() as link:
+                        preset = link.read(slot)
+                    note_slot(slot, preset, "read")
+            except PedalError as e:
                 return self._send(503, {"ok": False, "message": str(e)})
-            refresh_cached_slot(slot, preset)
             return self._send(200, {"ok": True, "preset": preset})
         if self.path == "/api/status":
             return self._send(200, {"connected": pedal_answers()})
@@ -362,8 +414,8 @@ class Handler(BaseHTTPRequestHandler):
         name = pedal_name(body.get("name"), "EDITOR")
         tags = int(body["tags"]) if body.get("tags") is not None else TAGS
         if self.path == "/api/send":
-            with lock:
-                ok, message = send_to_box(name, params, int(body.get("slot", 0)), tags)
+            with lock:  # always the edit buffer; saving only happens through /api/save and /api/sets/load
+                ok, message = send_live(name, params, tags)
             return self._send(200 if ok else 503, {"ok": ok, "message": message})
         if self.path == "/api/sets":
             SETS.write_text(json.dumps({"sets": body.get("sets", [])}, indent=1))
@@ -374,52 +426,32 @@ class Handler(BaseHTTPRequestHandler):
             if start < 1 or count < 0 or start + count - 1 > CAPACITY:
                 return self._send(400, {"ok": False, "message": f"The pedal's presets are numbered 1 to {CAPACITY}."})
             try:
-                with lock, PedalLink() as link:
-                    presets = [link.read(slot) for slot in range(start, start + count)]
-            except (ConnectionError, TimeoutError) as e:
+                with lock:
+                    with PedalLink() as link:
+                        presets = [link.read(slot) for slot in range(start, start + count)]
+                    for offset, preset in enumerate(presets):
+                        note_slot(start + offset, preset, "read")
+            except PedalError as e:
                 return self._send(503, {"ok": False, "message": str(e)})
-            for offset, preset in enumerate(presets):
-                refresh_cached_slot(start + offset, preset)
             return self._send(200, {"ok": True, "presets": presets})
         if self.path == "/api/sets/load":
             start, presets = int(body.get("start", 0)), body.get("presets", [])
             if not presets or start < 1 or start + len(presets) - 1 > CAPACITY:
                 return self._send(400, {"ok": False, "message": f"The set has to fit in presets 1 to {CAPACITY}."})
-            try:
-                return self._send(200, load_set(body.get("set_name", "set"), start, presets))
-            except (ConnectionError, TimeoutError) as e:
-                return self._send(503, {"ok": False, "message": str(e)})
+            return self._send(200, load_set(body.get("set_name", "set"), start, presets))
         if self.path == "/api/pedal/read":
             try:
                 with lock:
                     read_whole_pedal()
-            except (ConnectionError, TimeoutError) as e:
+            except PedalError as e:
                 return self._send(503, {"ok": False, "message": str(e)})
             return self._send(200, {"ok": True, **pedal_contents()})
         if self.path == "/api/save":
             slot = int(body.get("slot", 0))
             if not 1 <= slot <= CAPACITY:
                 return self._send(400, {"ok": False, "message": f"The pedal's presets are numbered 1 to {CAPACITY}."})
-            with lock:
-                # Back up whatever is in the slot right now, straight from the pedal. No backup, no overwrite.
-                try:
-                    with PedalLink() as link:
-                        old = link.read(slot)
-                except (ConnectionError, TimeoutError) as e:
-                    return self._send(503, {"ok": False, "message": f"{e} Nothing was saved."})
-                backup = None
-                if old:
-                    BACKUPS.mkdir(exist_ok=True)
-                    safe = "".join(c if c.isalnum() or c in " -" else "_" for c in old["name"]).strip()
-                    backup = unique_path(BACKUPS / f"{time.strftime('%Y-%m-%d %H%M%S')} preset {slot} {safe}.syx")
-                    backup.write_bytes(build_syx(slot, old["name"], old["tags"], old["params"]))
-                ok, message = send_to_box(name, params, slot, tags)
-            if ok and backup:
-                message += f" The old {old['name']} is backed up in backups/{backup.name}."
-            if ok:
-                record_save(slot, name, params, tags)
-                refresh_cached_slot(slot, {"slot": slot, "name": name, "params": params, "tags": tags})
-            return self._send(200 if ok else 503, {"ok": ok, "message": message})
+            result = save_preset(slot, name, tags, params)
+            return self._send(200 if result["ok"] else 503, result)
         if self.path == "/api/export":
             data = build_syx(int(body.get("slot", 263)), name, tags, params)
             self.send_response(200)
