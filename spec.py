@@ -57,7 +57,7 @@ PARAMS = [
     (1, "harmony", "Voicing", "choice", HARMONY_STYLES, True),
     (2, "harmony", "Key", "choice", KEYS, True),  # 3 = D confirmed on the unit
     (3, "harmony", "Scale", "choice", SCALES, False),
-    (5, "harmony", "Level", "db", (-29, 0), True),
+    (5, "harmony", "Level", "db", (-35, 0), True),  # box: -35 = Off, midpoint -18, top 0 dB (Will, 2026-09-17)
 
     (34, "double", "Doubling", "state", None, True),
     (4, "double", "Style", "choice", DOUBLE_STYLES, True),

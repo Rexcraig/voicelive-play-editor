@@ -2,7 +2,8 @@ const state = { values: {}, spec: null, timer: null };
 const $ = (sel) => document.querySelector(sel);
 
 const fmt = {
-  db: (v) => (v <= -51 ? "off" : `${v} dB`),
+  // The bottom of a level's range is Off on the box. Doubling's bottom (-36) hasn't been checked on the unit yet.
+  db: (v, p) => (v <= p.min && p.slot !== 6 ? "off" : `${v} dB`),
   range: (v) => `${v}`,
 };
 
@@ -153,12 +154,12 @@ function control(p) {
     input.value = state.values[p.slot];
     const out = document.createElement("span");
     out.className = "value";
-    out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value);
+    out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value, p);
     fill(input);
     input.oninput = () => {
       state.values[p.slot] = +input.value;
       fill(input);
-      out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value);
+      out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value, p);
       push();
     };
     wrap.append(input, out);
