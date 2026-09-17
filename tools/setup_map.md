@@ -66,3 +66,11 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 ## Other observations
 - 14 = 880 in base: likely Tune Reference in 0.5 Hz steps (440.0 Hz). 25 = 246: likely current preset.
 - USB MIDI stalled once after changing Input (fixed by replugging).
+
+## Baseline set on the pedal 2026-09-17 (Will's rig)
+Rig: Shure KSM8 on a JOYO wireless system; ONE XLR (Left) to a Fender singer amp; nothing in Aux; no Switch-3, no MP mic.
+**Cause of "effects don't do anything": Output was MONO — dry voice on Left, effects on Right — with only Left connected.**
+Baseline: Input Dynamic Mic, Mic Boost Off, RoomSense Ambient, Aux In Type Live, Tone Style Normal, Pitch Correction Off,
+Output STEREO, USB Out 0 dB, Vocal Cancel Off, Headphone Limit 0 dB, Lead Mute Off, Aux to Main Out On,
+Global Key/Tempo Off, Loop Input Lead Mix, Undo On, Loop Feedback 90 %, LCD Contrast 2, Tune 440.0 Hz, Up+Down Set Key,
+Pitch Pipe 0 dB, Lead Delay None, RoomSense LoCut 20 Hz, Switch-3 Control Loop Mode (both Moments Off), MP-75 HIT, MP-76 Default.
