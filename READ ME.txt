@@ -12,6 +12,17 @@ Tabs
   "Save to pedal" keeps it in a numbered preset.
 - On the pedal: everything saved on the pedal. "Open in editor" to tweak one.
 - Sets: build a set list, song by song, then "Load onto pedal" to put it in order on the pedal.
+- Setup: the pedal's own setup menu - input, outputs, tuner, foot switches - on one page instead of
+  buried in the box. Changes go to the pedal when you pick them.
+
+The little i button
+Next to a setting, it explains in plain words what that setting does and what to pick.
+An amber i means the name isn't confirmed yet, so treat it as a guess.
+
+If you hear no effects
+Check Setup > Output. On MONO the pedal sends your dry voice out the LEFT socket and the effects out
+the RIGHT one, so a single cable to the amp plays no effects. That was the problem on 17 September;
+it is now set correctly, but it is the first thing to look at if effects go quiet again.
 
 Safety
 Whenever the editor replaces a preset, it first saves a copy in the "backups" folder next to this file.
