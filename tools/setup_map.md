@@ -1,4 +1,6 @@
 # SETUP block map (read with tools/setup_probe.py; request 15 00, reply 0x13 x3 packets = 75 values)
+WRITE (proven 09-17, LCD Contrast 2->4->2 seen on screen): send the three 0x13 packets back (F0 00 01 38 00 69 13 01 34 <idx> <100 data> <checksum> F7)
+OUTSIDE a 57 session. Ack 34 01 00 00. Inside a session each packet is refused with 34 09 00 00. Tool: tools/setup_write_test.py <index> <value>.
 Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-value list. Enum values follow on-screen order.
 
 ## Page 1/8 INPUT
