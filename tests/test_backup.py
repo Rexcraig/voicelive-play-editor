@@ -49,7 +49,7 @@ class DataBackupTests(ServerTest):
 
     def test_save_triggers_a_backup_shortly_after(self):
         server.SETS.write_text("{}")
-        self.post("/api/sets", {"sets": [{"id": "x"}]})
+        self.post("/api/sets", {"sets": [{"id": "x"}], "revision": 0})
         self.assertIsNotNone(server.backup_timer)
         server.backup_timer.cancel()
         server.backup_data()

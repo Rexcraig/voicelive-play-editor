@@ -261,8 +261,22 @@ class RangeAndSetsStorageTests(ServerTest):
 
     def test_sets_round_trip(self):
         sets = [{"id": "a", "name": "Gig", "songs": [{"id": "s", "title": "Song", "presets": []}]}]
-        self.post("/api/sets", {"sets": sets})
-        self.assertEqual(self.get("/api/sets"), (200, {"sets": sets}))
+        self.assertEqual(self.get("/api/sets"), (200, {"sets": [], "revision": 0}))
+        self.assertEqual(self.post("/api/sets", {"sets": sets, "revision": 0}), (200, {"ok": True, "revision": 1}))
+        self.assertEqual(self.get("/api/sets"), (200, {"sets": sets, "revision": 1}))
+
+    def test_second_window_cannot_overwrite_newer_sets(self):
+        self.post("/api/sets", {"sets": [{"id": "a", "name": "From window A"}], "revision": 0})
+        status, r = self.post("/api/sets", {"sets": [{"id": "b", "name": "Stale window B"}], "revision": 0})
+        self.assertEqual(status, 409)
+        self.assertEqual(r["sets"], [{"id": "a", "name": "From window A"}])
+        self.assertIn("another editor window", r["message"])
+        self.assertEqual(self.get("/api/sets")[1]["sets"], [{"id": "a", "name": "From window A"}])
+
+    def test_sets_file_from_before_revisions_still_loads(self):
+        server.SETS.write_text('{"sets": [{"id": "old"}]}')
+        self.assertEqual(self.get("/api/sets"), (200, {"sets": [{"id": "old"}], "revision": 0}))
+        self.assertEqual(self.post("/api/sets", {"sets": [], "revision": 0})[0], 200)
 
     def test_full_read_lists_every_preset(self):
         status, r = self.post("/api/pedal/read")
@@ -275,6 +289,11 @@ class FileTests(ServerTest):
         status, r = self.post("/api/syx", raw=(FIXTURES / "All 3 - Treat Me Right.syx").read_bytes())
         self.assertEqual([p["name"] for p in r["presets"]], ["TREAT ME CHORUS", "TREAT ME FX", "TREAT ME RIGHT"])
         self.assertEqual(self.post("/api/syx", raw=b"junk")[0], 400)
+
+    def test_export_of_new_preset_targets_edit_buffer_not_a_slot(self):
+        status, data = self.post("/api/export", {"name": "NEW", "values": {}})
+        (p,) = parse_syx(data)
+        self.assertEqual(p["number"], 0)
 
     def test_export_of_unchanged_preset_matches_original_file(self):
         from helpers import FIXTURES

@@ -109,6 +109,11 @@ def pedal_contents():
             "presets": sorted(by_slot.values(), key=lambda x: x["slot"]), "capacity": CAPACITY}
 
 
+def read_sets():
+    data = json.loads(SETS.read_text()) if SETS.exists() else {}
+    return {"sets": data.get("sets", []), "revision": data.get("revision", 0)}
+
+
 def slot_log():
     """saves.json: {slot: {time, kind: "saved"|"read", preset or None}}. Older files stored bare saves."""
     raw = json.loads(SAVES.read_text()) if SAVES.exists() else {}
@@ -384,7 +389,7 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/api/pedal":
             return self._send(200, pedal_contents())
         if self.path == "/api/sets":
-            return self._send(200, json.loads(SETS.read_text()) if SETS.exists() else {"sets": []})
+            return self._send(200, read_sets())
         if self.path.startswith("/api/pedal/slot/"):
             slot = int(self.path.rsplit("/", 1)[1])
             if not 1 <= slot <= CAPACITY:
@@ -418,9 +423,16 @@ class Handler(BaseHTTPRequestHandler):
                 ok, message = send_live(name, params, tags)
             return self._send(200 if ok else 503, {"ok": ok, "message": message})
         if self.path == "/api/sets":
-            SETS.write_text(json.dumps({"sets": body.get("sets", [])}, indent=1))
+            with files_lock:
+                current = read_sets()
+                if body.get("revision") != current["revision"]:
+                    return self._send(409, {"ok": False, **current,
+                                            "message": "These sets were changed in another editor window. "
+                                                       "Showing the latest version; your last change wasn't kept."})
+                revision = current["revision"] + 1
+                SETS.write_text(json.dumps({"revision": revision, "sets": body.get("sets", [])}, indent=1))
             schedule_backup()
-            return self._send(200, {"ok": True})
+            return self._send(200, {"ok": True, "revision": revision})
         if self.path == "/api/pedal/range":
             start, count = int(body.get("start", 1)), int(body.get("count", 0))
             if start < 1 or count < 0 or start + count - 1 > CAPACITY:
@@ -453,7 +465,8 @@ class Handler(BaseHTTPRequestHandler):
             result = save_preset(slot, name, tags, params)
             return self._send(200 if result["ok"] else 503, result)
         if self.path == "/api/export":
-            data = build_syx(int(body.get("slot", 263)), name, tags, params)
+            slot = int(body.get("slot", 0))
+            data = build_syx(slot if 0 <= slot <= CAPACITY else 0, name, tags, params)
             self.send_response(200)
             self.send_header("Content-Type", "application/octet-stream")
             self.send_header("Content-Disposition", f'attachment; filename="{name.title()}.syx"')

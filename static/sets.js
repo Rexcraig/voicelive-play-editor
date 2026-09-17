@@ -1,7 +1,7 @@
 // Sets: named, ordered song lists. Each song holds one or more presets (full copies, so a set survives pedal changes).
 // "Load onto pedal" writes the set's presets, in order, into consecutive slots.
 
-const sets = { list: [], current: null, loaded: false, saveTimer: null, picker: null, plan: null, drag: null };
+const sets = { list: [], revision: 0, current: null, loaded: false, saveTimer: null, saving: Promise.resolve(), picker: null, plan: null, drag: null };
 const uid = () => Math.random().toString(36).slice(2, 10);
 const allPresets = (set) => set.songs.flatMap((song) => song.presets);
 const el = (tag, cls, text) => {
@@ -13,11 +13,19 @@ const el = (tag, cls, text) => {
 
 async function openSetsTab() {
   if (!sets.loaded) {
-    sets.list = (await (await fetch("/api/sets")).json()).sets;
+    const data = await api("/api/sets");
+    if (data.ok === false) return setsNotice(data.message);
+    sets.list = data.sets;
+    sets.revision = data.revision;
     sets.current = sets.list[0]?.id || null;
     sets.loaded = true;
   }
   renderSets();
+}
+
+function setsNotice(text) {
+  $("#sets-notice").textContent = text || "";
+  $("#sets-notice").hidden = !text;
 }
 
 function currentSet() { return sets.list.find((s) => s.id === sets.current); }
@@ -26,8 +34,54 @@ function saveSets() {
   const set = currentSet();
   if (set) set.updated = Date.now();
   clearTimeout(sets.saveTimer);
-  sets.saveTimer = setTimeout(() => fetch("/api/sets", { method: "POST", body: JSON.stringify({ sets: sets.list }) }), 300);
+  sets.saveTimer = setTimeout(flushSets, 300);
 }
+
+// Saves go out one at a time, each carrying the revision it was based on. If another window saved in
+// between, the server refuses and this window switches to the latest sets.
+function flushSets() {
+  clearTimeout(sets.saveTimer);
+  sets.saveTimer = null;
+  sets.saving = sets.saving.then(async () => {
+    const data = await api("/api/sets", { sets: sets.list, revision: sets.revision });
+    if (data.ok) {
+      sets.revision = data.revision;
+      if ($("#sets-notice").dataset.kind === "error") setsNotice("");
+    } else if (data.sets) {
+      sets.list = data.sets;
+      sets.revision = data.revision;
+      if (!currentSet()) sets.current = sets.list[0]?.id || null;
+      setsNotice(data.message);
+      $("#sets-notice").dataset.kind = "conflict";
+      renderSets();
+    } else {
+      setsNotice(`Couldn't save your sets: ${data.message}`);
+      $("#sets-notice").dataset.kind = "error";
+    }
+  });
+  return sets.saving;
+}
+
+// Closing or hiding the tab right after an edit: send the pending change immediately.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState !== "hidden" || !sets.saveTimer) return;
+  clearTimeout(sets.saveTimer);
+  sets.saveTimer = null;
+  navigator.sendBeacon("/api/sets", new Blob([JSON.stringify({ sets: sets.list, revision: sets.revision })], { type: "text/plain" }));
+  sets.revision += 1;
+});
+
+// Coming back to this window: pick up changes made in another one (if nothing is waiting to be saved here).
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || !sets.loaded || sets.saveTimer) return;
+  await sets.saving;
+  const data = await api("/api/sets");
+  if (data.ok === false || data.revision === sets.revision) return;
+  sets.list = data.sets;
+  sets.revision = data.revision;
+  if (!currentSet()) sets.current = sets.list[0]?.id || null;
+  if (!$("#sets").hidden) renderSets();
+});
 
 function renderSets() {
   const list = $("#set-list");
@@ -79,8 +133,7 @@ function renderSetEditor() {
     if (!confirm(`Delete the set "${set.name || "Untitled set"}"? Presets already on the pedal stay there.`)) return;
     sets.list = sets.list.filter((s) => s !== set);
     sets.current = sets.list[0]?.id || null;
-    saveSets();
-    fetch("/api/sets", { method: "POST", body: JSON.stringify({ sets: sets.list }) });
+    flushSets();
     renderSets();
   };
   const load = el("button", "primary", "Load onto pedal");
@@ -342,7 +395,8 @@ async function planLoad() {
   if (check !== planCheck) return;
   if (!data.ok) return ($("#load-summary").textContent = data.message);
 
-  const same = (a, b) => a && a.name === b.name && a.tags === b.tags && a.params.every((v, i) => v === b.params[i]);
+  // Compare names the way the pedal stores them, as the server does when it decides what to write.
+  const same = (a, b) => a && a.name === pedalName(b.name) && a.tags === b.tags && a.params.every((v, i) => v === b.params[i]);
   const rows = presets.map((p, i) => ({ slot: start + i, now: data.presets[i], next: p }));
   const replaced = rows.filter((r) => r.now && !same(r.now, r.next)).length;
   const matching = rows.filter((r) => same(r.now, r.next)).length;
@@ -357,7 +411,7 @@ async function planLoad() {
     const tr = el("tr", !r.now ? "is-empty" : same(r.now, r.next) ? "is-same" : "is-replace");
     tr.append(el("td", "slot", String(r.slot)));
     tr.append(el("td", null, r.now ? r.now.name : "empty"));
-    tr.append(el("td", null, same(r.now, r.next) ? `${r.next.name} (already there)` : r.next.name));
+    tr.append(el("td", null, same(r.now, r.next) ? `${pedalName(r.next.name)} (already there)` : pedalName(r.next.name)));
     table.append(tr);
   }
   const parts = [];

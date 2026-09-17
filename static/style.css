@@ -316,3 +316,4 @@ button.add-song:hover { color: var(--text); border-color: var(--accent-dim); bac
   #picker-list li { grid-template-columns: 36px 1fr auto; }
   #picker-list .chips { display: none; }
 }
+#sets-notice { grid-column: 1 / -1; margin: 0; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); border-left: 3px solid var(--hit); background: var(--panel); color: #ffd39a; font-size: 13px; }

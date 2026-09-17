@@ -144,6 +144,13 @@ async function api(path, body) {
   }
 }
 
+// The name exactly as the pedal will store it (same rule as tch.pedal_name, measured on the unit).
+function pedalName(name, fallback = "UNTITLED") {
+  const allowed = new Set(state.spec.name_chars);
+  const cleaned = [...(name || "").toUpperCase().slice(0, state.spec.name_length)].map((c) => (allowed.has(c) ? c : " ")).join("").trimEnd();
+  return cleaned || fallback;
+}
+
 async function send() {
   const data = await api("/api/send", { name: $("#preset-name").value, values: state.values, tags: state.tags });
   if (!data.ok) hint(data.message, "live");
@@ -379,7 +386,7 @@ $("#export").onclick = () => {
   document.body.append(form);
   fetch("/api/export", {
     method: "POST",
-    body: JSON.stringify({ name: $("#preset-name").value, values: state.values, tags: state.tags, slot: 263 }),
+    body: JSON.stringify({ name: $("#preset-name").value, values: state.values, tags: state.tags, slot: state.slot || 0 }),
   }).then((r) => r.blob()).then((blob) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
