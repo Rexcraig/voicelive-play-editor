@@ -54,6 +54,7 @@ function setupRow(f) {
   row.classList.toggle("inactive", setupInactive(f.index));
   const label = document.createElement("label");
   label.textContent = f.label;
+  if (f.help) label.append(infoButton(f.label, f.help));
   row.append(label);
 
   if (f.kind === "choice") {
@@ -159,5 +160,70 @@ function setupChange(index, value) {
     if (!setup.pending) renderSetup();
   });
 }
+
+// A small "i" by each setting: hover, focus or tap for a short explanation. The first one waits a moment;
+// while the panel is open the next one is instant, so reading down a page stays quick.
+const tip = { el: null, timer: null, open: null, lastClosed: 0 };
+
+function tipEl() {
+  if (!tip.el) {
+    tip.el = document.createElement("div");
+    tip.el.className = "tip";
+    tip.el.id = "setting-tip";
+    tip.el.hidden = true;
+    document.body.append(tip.el);
+  }
+  return tip.el;
+}
+
+function showTip(button, title, text) {
+  const el = tipEl();
+  el.innerHTML = "<strong></strong><p></p>";
+  el.querySelector("strong").textContent = title;
+  el.querySelector("p").textContent = text;
+  el.hidden = false;
+  const r = button.getBoundingClientRect();
+  const width = Math.min(320, innerWidth - 24);
+  el.style.width = `${width}px`;
+  const left = Math.min(Math.max(12, r.left - width / 2 + r.width / 2), innerWidth - width - 12);
+  const below = r.bottom + 8 + el.offsetHeight < innerHeight;
+  el.style.left = `${left}px`;
+  el.style.top = `${below ? r.bottom + 8 : Math.max(12, r.top - 8 - el.offsetHeight)}px`;
+  button.setAttribute("aria-expanded", "true");
+  tip.open = button;
+}
+
+function hideTip() {
+  clearTimeout(tip.timer);
+  if (tip.open) tip.open.setAttribute("aria-expanded", "false");
+  if (tip.el) tip.el.hidden = true;
+  if (tip.open) tip.lastClosed = Date.now();
+  tip.open = null;
+}
+
+function infoButton(title, text) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = "info";
+  b.textContent = "i";
+  b.setAttribute("aria-label", `What ${title} does`);
+  b.setAttribute("aria-expanded", "false");
+  b.setAttribute("aria-controls", "setting-tip");
+  const open = () => showTip(b, title, text);
+  b.onmouseenter = () => {
+    clearTimeout(tip.timer);
+    const instant = tip.open || Date.now() - tip.lastClosed < 800;
+    tip.timer = setTimeout(open, instant ? 0 : 350);
+  };
+  b.onmouseleave = () => { clearTimeout(tip.timer); if (tip.open === b) hideTip(); };
+  b.onfocus = open;
+  b.onblur = () => { if (tip.open === b) hideTip(); };
+  b.onclick = (e) => { e.preventDefault(); tip.open === b ? hideTip() : open(); };
+  return b;
+}
+
+addEventListener("keydown", (e) => { if (e.key === "Escape") hideTip(); });
+addEventListener("scroll", hideTip, true);
+addEventListener("pointerdown", (e) => { if (tip.open && !e.target.closest(".info")) hideTip(); });
 
 $("#setup-refresh").onclick = () => openSetupTab(true);

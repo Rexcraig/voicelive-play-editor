@@ -168,6 +168,46 @@ SETUP_PAGES = [
 SETUP_FIELDS = {i: (label, kind, extra) for _, _, _, fields in SETUP_PAGES for i, label, kind, extra in fields}
 
 
+# Plain-language help for each setup field, from the manual plus what we measured on the unit.
+SETUP_HELP = {
+    9: "Which input the pedal listens to. Match it to the microphone you plug in, so the pedal can tune its preamp for that type. USB Left/Right takes sound from a computer instead.",
+    28: "The two small microphones built into the pedal. Ambient picks up the room for your headphone mix. Ambient/Auto also listens to the music to work out its key, so harmonies can follow the band. Voice uses them instead of a microphone, and is heard in headphones only.",
+    31: "What is plugged into the Aux socket. Live suits a band or instrument feed, Tracks suits pre-recorded music you sing along to, and Monitor lets you hear it without using it to work out the key.",
+    30: "Automatic EQ, compression and gating on the lead voice. Normal suits most singers. The NG versions leave the gate off, so a very quiet voice is never cut off.",
+    8: "Gentle automatic tuning applied to everything you sing. Off leaves the voice untouched; higher amounts pull harder towards the nearest note, up to a hard Auto-Tune effect.",
+    6: "How the two XLR outputs are used. Stereo sends the whole sound to both. Mono sends your dry voice out Left and all effects out Right, for a sound engineer who wants them separate. Dual Mono sends voice and effects out Left, and anything from Aux out Right. With only one cable in Left, Mono means no effects are heard.",
+    1: "Level of the sound the pedal sends to a computer over USB.",
+    35: "Tries to remove the lead vocal from music coming in on Aux, so you can sing along karaoke style. How well it works varies from song to song.",
+    34: "Where the headphone limiter starts holding the volume back, to protect your ears.",
+    19: "Removes your own voice from the output, leaving only the processed sounds such as harmonies.",
+    32: "Whether music coming in on Aux is also sent to the PA, or stays in your headphones only.",
+    17: "Keeps the key you set for harmonies when you change presets, instead of each preset bringing its own.",
+    15: "Keeps the tempo you tapped when you change presets, so delays stay in time from song to song.",
+    36: "Extra gain for quiet sources. Off suits a line-level source such as a wireless receiver; Low or High suit a microphone plugged straight in. Watch the pedal's input light while singing loudly: it should never sit red.",
+    7: "What the looper records: your voice with its effects, the Aux input, or both together.",
+    24: "Keeps the last loop layer undoable. On gives 15 seconds of loop time; Off doubles it to 30 seconds.",
+    23: "How loud the existing layers stay when you record another one. Around 90% stops a loop getting louder with every pass.",
+    21: "How dark the pedal's own screen looks. Adjust it for the light you play in.",
+    14: "The tuning everything is measured against. 440.0 Hz is standard; change it to match instruments tuned elsewhere.",
+    22: "What pressing both footswitches together does: start looping, or set the key for harmonies.",
+    13: "Volume of the reference note in the pedal's Practice screen.",
+    18: "Delays your dry voice very slightly so harmonies line up exactly with it. None is the most immediate. Voice Sync always aligns by the same amount. Auto aligns by how many effects are running.",
+    43: "Cuts low rumble picked up by the pedal's built-in room microphones, such as stage noise or air conditioning.",
+    37: "Whether an optional three-button footswitch runs the looper with fixed functions, or the three assignments you choose below.",
+    38: "Harmony sounds only while a footswitch is held down, instead of switching on and off with each press.",
+    39: "Delay sounds only while a footswitch is held down.",
+    40: "What the first button on an optional three-button footswitch does. It applies when Control is set to Custom.",
+    41: "What the second button on an optional three-button footswitch does. It applies when Control is set to Custom.",
+    42: "What the third button on an optional three-button footswitch does. It applies when Control is set to Custom.",
+    20: "What the button on a TC-Helicon MP-75 microphone does.",
+    48: "Whether a TC-Helicon MP-76 microphone uses its standard button layout, or the four assignments you choose below.",
+    47: "What the top button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+    45: "What the bottom button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+    46: "What the left button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+    44: "What the right button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+}
+
+
 def setup_value_ok(index, value):
     if index not in SETUP_FIELDS:
         return False
@@ -182,7 +222,7 @@ def setup_value_ok(index, value):
 def as_json():
     return {
         "setup": [{"id": i, "title": t, "help": h,
-                   "fields": [{"index": x, "label": l, "kind": k,
+                   "fields": [{"index": x, "label": l, "kind": k, "help": SETUP_HELP.get(x, ""),
                                "options": e if k in ("choice", "onoff") else None,
                                "unit": e if k in ("step", "hz2") else None,
                                "min": e[0] if k in ("percent", "locut") else None,
