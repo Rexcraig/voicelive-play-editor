@@ -28,6 +28,13 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 - 24 Undo: Off 0, On 1
 - 23 Loop Feedback: 0..100 %
 
+## Page 5/8 SYSTEM
+- 21 LCD Contrast (number as shown)
+- 14 Tune Reference: value = Hz x 2 (880 = 440.0 Hz, 884 = 442.0 Hz)
+- 22 Up/Dn Function: Looping 0, Set Key 1
+- 13 Pitch Pipe Level (dB, 0 = 0 dB)
+- 18 / 43 Lead Delay and RoomSense LoCut (one each; None 0 -> Voice Sync 1, 20 Hz 0 -> 21 Hz 1) — resolving
+
 ## Seen on screen, not yet tested
 - Page 5 SYSTEM: LCD Contrast 2, Tune Reference 440.0 Hz (= value 14, half-Hz), Up/Dn Function SET KEY, Pitch Pipe Level 0 dB,
   Lead Delay NONE, RoomSense LoCut 20 Hz
