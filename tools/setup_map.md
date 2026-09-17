@@ -10,6 +10,23 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 - 30 Tone Style: Off 0, Normal 1, Less Bright 2, Norm+Warmth 3, More Comp 4, Norm No Gate 5, Less Bright NG 6, Warmth NG 7, More Comp NG 8
 - 8  Pitch Correction Amount: Off 0, 1..100 %
 
+## Page 2/8 OUTPUT
+- 6  Output: Stereo 0, Mono 1, Dual Mono 2
+- 1  USB Out level (dB, 0 = 0 dB; negative values)
+- 35 Vocal Cancel: Off 0, On 1
+- 34 Headphone Limiter (dB, 0 = 0 dB; negative values)
+- 19 Lead Mute: Off 0, On 1
+- 32 Aux to Main Out: Off 0, On 1
+
+## Seen on screen, not yet tested
+- Page 3 GLOBAL: Global Key OFF, Global Tempo OFF, Mic Boost LOW
+- Page 4 LOOP: Input AUX, Undo OFF, Loop Feedback 73 % (= value 23)
+- Page 5 SYSTEM: LCD Contrast 2, Tune Reference 440.0 Hz (= value 14, half-Hz), Up/Dn Function SET KEY, Pitch Pipe Level 0 dB,
+  Lead Delay NONE, RoomSense LoCut 20 Hz
+- Page 6 SWITCH-3: Control LOOP MODE, Harm Moment OFF, Delay Moment OFF, Switch 1 LOOP REC/PLAY, Switch 2 LOOP STOP/CLEAR, Switch 3 LOOP UNDO
+- Page 7 MIC CONTROL: MP76 Control CUSTOM, MP75 Control HIT + TALK, MP76 Top HIT, MP76 Bottom DOUBLING, MP76 Left LOOP, MP76 Right HIT
+- Page 8 PRODUCT INFO (read-only): Firmware 1.4.00 B70, Serial 00000000, Manufacture date NOT SET
+
 ## Other observations
 - 14 = 880 in base: likely Tune Reference in 0.5 Hz steps (440.0 Hz). 25 = 246: likely current preset.
 - USB MIDI stalled once after changing Input (fixed by replugging).
