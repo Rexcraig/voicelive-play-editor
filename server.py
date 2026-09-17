@@ -383,6 +383,16 @@ class Handler(BaseHTTPRequestHandler):
         for name, ctype in (("app.js", "text/javascript"), ("sets.js", "text/javascript"), ("style.css", "text/css")):
             if self.path == "/" + name:
                 return self._send(200, (HERE / "static" / name).read_bytes(), ctype)
+        if self.path.startswith("/fonts/"):  # self-hosted OFL fonts, see static/style.css
+            font = HERE / "static/fonts" / pathlib.PurePosixPath(self.path).name
+            if font.suffix == ".woff2" and font.is_file():
+                self.send_response(200)
+                self.send_header("Content-Type", "font/woff2")
+                self.send_header("Cache-Control", "max-age=31536000, immutable")
+                self.send_header("Content-Length", str(font.stat().st_size))
+                self.end_headers()
+                return self.wfile.write(font.read_bytes())
+            return self._send(404, {"ok": False, "message": "No such font."})
         if self.path == "/api/spec":
             return self._send(200, {**spec.as_json(), "defaults": DEFAULTS,
                                     "name_chars": "".join(sorted(NAME_CHARS)), "name_length": NAME_LENGTH})
