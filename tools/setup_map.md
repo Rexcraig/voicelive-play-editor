@@ -33,7 +33,9 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 - 14 Tune Reference: value = Hz x 2 (880 = 440.0 Hz, 884 = 442.0 Hz)
 - 22 Up/Dn Function: Looping 0, Set Key 1
 - 13 Pitch Pipe Level (dB, 0 = 0 dB)
-- 18 / 43 Lead Delay and RoomSense LoCut (one each; None 0 -> Voice Sync 1, 20 Hz 0 -> 21 Hz 1) — resolving
+- 18 Lead Delay: None 0, Voice Sync 1, Auto 2
+- 43 RoomSense LoCut: index 0..112, Hz = round(20 * 2^(index/24)) (1/24-octave steps; 0 = 20 Hz, 2 = 21 Hz, 112 = 508 Hz;
+     formula fits all three readings, mid-range not spot-checked)
 
 ## Seen on screen, not yet tested
 - Page 5 SYSTEM: LCD Contrast 2, Tune Reference 440.0 Hz (= value 14, half-Hz), Up/Dn Function SET KEY, Pitch Pipe Level 0 dB,
