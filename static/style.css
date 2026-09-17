@@ -48,9 +48,19 @@
   --z-menu: 20;
   --z-overlay: 50;
 }
-/* one lit colour for every effect; the card's state (on / hit) decides which */
-:root, [data-block] { --fx: var(--lit); --fx-ink: var(--lit-ink); }
-.hit[data-block], .chip.hit[data-block] { --fx: var(--hit); --fx-ink: var(--hit-ink); }
+/* Each effect has its own channel colour, like the colour-coded strips on a console.
+   Same lightness and chroma for all seven so none shouts; hues skip the amber band, which means HIT.
+   Colour only appears when the effect is On or HIT; Off stays graphite. */
+:root { --h: 195; }
+[data-block="harmony"]   { --h: 350; }
+[data-block="double"]    { --h: 300; }
+[data-block="reverb"]    { --h: 250; }
+[data-block="delay"]     { --h: 200; }
+[data-block="umod"]      { --h: 155; }
+[data-block="hardtune"]  { --h: 125; }
+[data-block="megaphone"] { --h: 25; }
+:root, [data-block] { --fx: oklch(0.80 0.11 var(--h)); --fx-ink: oklch(0.21 0.04 var(--h)); }
+[data-block="global"] { --fx: var(--lit); --fx-ink: var(--lit-ink); }
 
 * { box-sizing: border-box; }
 
@@ -92,7 +102,7 @@ input, textarea { caret-color: var(--lit); }
   box-shadow: inset 0 0 0 1px var(--line-2);
   transition: background-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out);
 }
-.leds i.on, .leds i.hit { background: var(--fx); box-shadow: 0 0 6px 1px oklch(from var(--fx) l c h / 0.45); }
+.leds i.on { background: var(--fx); box-shadow: 0 0 6px 1px oklch(from var(--fx) l c h / 0.45); }
 
 /* scribble strip: the one thing the singer names herself */
 .name-field { display: flex; flex-direction: column; gap: 6px; }
@@ -175,8 +185,12 @@ main {
 
 .card.on, .card.hit { border-color: var(--line-2); }
 .card.on .card-title h2, .card.hit .card-title h2 { color: var(--fx); }
-.card.on .card-head { background: oklch(from var(--lit) l c h / 0.045); }
-.card.hit .card-head { background: oklch(from var(--hit) l c h / 0.06); }
+.card.on .card-head { background: oklch(from var(--fx) l c h / 0.06); }
+.card.hit .card-head { background: oklch(from var(--fx) l c h / 0.035); }
+/* HIT: the effect keeps its colour, the switch cap turns amber and the light becomes a ring (armed, not sounding) */
+.card.hit .seg::before { background: var(--hit); }
+.card.hit .seg button[aria-pressed="true"] { color: var(--hit-ink); }
+.card.hit .led, .leds i.hit { background: transparent; box-shadow: inset 0 0 0 1.5px var(--fx); }
 .card.off .card-body { opacity: 0.45; pointer-events: none; }
 .card-body { padding: 14px 16px 16px; display: grid; gap: 12px; transition: opacity 200ms var(--ease-out); }
 
@@ -193,7 +207,7 @@ main {
   transform: translateX(calc(var(--i) * 100%));
   transition: transform 200ms var(--ease-out), background-color 200ms var(--ease-out);
 }
-.card.on .seg::before, .card.hit .seg::before { background: var(--fx); }
+.card.on .seg::before { background: var(--fx); }
 .seg button {
   position: relative; border: 0; background: transparent; box-shadow: none; color: var(--muted);
   min-width: 42px; padding: 7px 8px; border-radius: 1px; font-size: 10.5px; letter-spacing: 0.08em;
@@ -202,7 +216,7 @@ main {
 .seg button:hover { background: transparent; color: var(--text); }
 .seg button:active { transform: none; }
 .seg button[aria-pressed="true"] { color: var(--text); }
-.card.on .seg button[aria-pressed="true"], .card.hit .seg button[aria-pressed="true"] { color: var(--fx-ink); }
+.card.on .seg button[aria-pressed="true"] { color: var(--fx-ink); }
 
 .row { display: grid; grid-template-columns: 124px 1fr; align-items: center; gap: 12px; }
 .row > label { font-size: 13.5px; font-weight: 500; color: var(--text); }
