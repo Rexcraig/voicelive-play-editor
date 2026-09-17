@@ -23,8 +23,12 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
 - 15 Global Tempo: Off 0, On 1
 - 36 Mic Boost: Off 0, Low 1, High 2
 
+## Page 4/8 LOOP
+- 7  Loop Input: Lead Mix 0, Aux 1, Lead Mix and Aux 2
+- 24 Undo: Off 0, On 1
+- 23 Loop Feedback: 0..100 %
+
 ## Seen on screen, not yet tested
-- Page 4 LOOP: Input AUX, Undo OFF, Loop Feedback 73 % (= value 23)
 - Page 5 SYSTEM: LCD Contrast 2, Tune Reference 440.0 Hz (= value 14, half-Hz), Up/Dn Function SET KEY, Pitch Pipe Level 0 dB,
   Lead Delay NONE, RoomSense LoCut 20 Hz
 - Page 6 SWITCH-3: Control LOOP MODE, Harm Moment OFF, Delay Moment OFF, Switch 1 LOOP REC/PLAY, Switch 2 LOOP STOP/CLEAR, Switch 3 LOOP UNDO
