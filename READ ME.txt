@@ -14,6 +14,8 @@ Tabs
 - Sets: build a set list, song by song, then "Load onto pedal" to put it in order on the pedal.
 - Setup: the pedal's own setup menu - input, outputs, tuner, foot switches - on one page instead of
   buried in the box. Changes go to the pedal when you pick them.
+  Not sure what to pick? Press "Set up my rig", answer a few questions about your mic and cables, and it
+  shows what it would change and why. Nothing changes until you press Apply.
 
 The little i button
 Next to a setting, it explains in plain words what that setting does and what to pick.
