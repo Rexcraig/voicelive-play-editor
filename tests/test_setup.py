@@ -1,7 +1,7 @@
 """The Setup tab: reading and writing the pedal's whole-pedal settings, against a simulated pedal."""
 import unittest
 
-from helpers import ServerTest
+from helpers import ROOT, ServerTest
 import spec
 
 
@@ -133,6 +133,13 @@ class SetupTests(ServerTest):
         self.assertEqual(self.pedal.setup[17], 0)  # not ticked, so untouched
         self.assertEqual([row["index"] for row in body["plan"]],
                          [i for i in offered if i != 22])  # the rest are still offered
+
+    def test_version_is_the_same_everywhere_it_is_shown(self):
+        status, body = self.get("/api/spec")
+        self.assertEqual(body["version"], spec.VERSION)
+        readme = (ROOT / "READ ME.txt").read_text()
+        self.assertTrue(readme.startswith(f"VoiceLive Play Editor v{spec.VERSION} "), readme.splitlines()[0])
+        self.assertIn('id="version"', (ROOT / "static/index.html").read_text())
 
     def test_spec_lists_every_page_with_known_indices(self):
         pages = spec.as_json()["setup"]

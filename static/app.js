@@ -9,6 +9,8 @@ const fmt = {
 
 async function boot() {
   state.spec = await (await fetch("/api/spec")).json();
+  $("#version").textContent = `v${state.spec.version}`;
+  document.title = `VoiceLive Play Editor v${state.spec.version}`;
   state.spec.params.forEach((p) => (state.values[p.slot] = state.spec.defaults[p.slot]));
   // Start with everything off so the pedal reflects exactly what's on screen.
   state.spec.params.filter((p) => p.kind === "state").forEach((p) => (state.values[p.slot] = 0));

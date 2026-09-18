@@ -4,6 +4,9 @@ Decoded from 877 official TC-Helicon presets and confirmed on the unit where mar
 `confirmed` = seen on the box's own screen; otherwise it's inferred from TC's presets + manual.
 """
 
+# The editor's version. Bump it for every package handed to anyone, then tag git (vX.Y) and name the zip to match.
+VERSION = "0.3"
+
 OFF, ON, HIT = 0, 1, 2
 
 REVERB_STYLES = [
@@ -407,6 +410,7 @@ def setup_value_ok(index, value):
 
 def as_json():
     return {
+        "version": VERSION,
         "rig": RIG_QUESTIONS,
         "setup": [{"id": i, "title": t, "help": h,
                    "fields": [{"index": x, "label": l, "kind": k, "help": SETUP_HELP.get(x, ""),

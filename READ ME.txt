@@ -1,4 +1,11 @@
-VoiceLive Play Editor (test version)
+VoiceLive Play Editor v0.3 (test version)
+
+The version is also shown next to "VoiceLive Play" at the top left of the editor. Mention it when you
+report a problem.
+
+Upgrading from an older version
+Unzip the new version next to the old folder, not over it. Then copy sets.json, saves.json and the
+backups folder from the old folder into the new one, so your sets and backups come with you.
 
 Start
 1. Plug the VoiceLive Play into this Mac with USB. Quit VoiceSupport if it's open.

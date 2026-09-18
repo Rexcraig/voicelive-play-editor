@@ -623,6 +623,6 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8730
-    print(f"VoiceLive Play editor on http://localhost:{port}")
+    print(f"VoiceLive Play editor v{spec.VERSION} on http://localhost:{port}")
     backup_data()  # catch up on anything changed while the drive was unplugged
     ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
