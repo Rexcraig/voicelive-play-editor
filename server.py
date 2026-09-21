@@ -490,7 +490,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self.wfile.write(font.read_bytes())
             return self._send(404, {"ok": False, "message": "No such font."})
         if self.path == "/api/spec":
-            return self._send(200, {**spec.as_json(), "defaults": DEFAULTS,
+            return self._send(200, {**spec.as_json(), "defaults": DEFAULTS, "tags": TAGS,
                                     "name_chars": "".join(sorted(NAME_CHARS)), "name_length": NAME_LENGTH})
         if self.path == "/api/pedal":
             return self._send(200, pedal_contents())

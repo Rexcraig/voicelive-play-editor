@@ -12,3 +12,4 @@ backups/
 tools/vs_stdout.txt
 .DS_Store
 docs/
+web/public/

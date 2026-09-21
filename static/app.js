@@ -8,7 +8,9 @@ const fmt = {
 };
 
 async function boot() {
-  state.spec = await (await fetch("/api/spec")).json();
+  // The browser-only build has no server: it sets vlpTransport, and every call below goes there instead.
+  if (globalThis.vlpReady) await globalThis.vlpReady;
+  state.spec = await api("/api/spec");
   $("#version").textContent = `v${state.spec.version}`;
   document.title = `VoiceLive Play Editor v${state.spec.version}`;
   state.spec.params.forEach((p) => (state.values[p.slot] = state.spec.defaults[p.slot]));
@@ -187,6 +189,7 @@ function push() {
 // becomes a message on screen instead of a button stuck on "Saving…".
 async function api(path, body) {
   try {
+    if (globalThis.vlpTransport) return await globalThis.vlpTransport(path, body);
     const res = await fetch(path, body === undefined ? {} : { method: "POST", body: JSON.stringify(body) });
     return await res.json();
   } catch {
@@ -226,7 +229,7 @@ function hint(text, source = "action") {
 
 async function poll() {
   try {
-    const { connected } = await (await fetch("/api/status")).json();
+    const { connected } = await api("/api/status");
     const wasConnected = state.connected;
     state.connected = connected;
     if (connected && !wasConnected) refreshSetup();
@@ -334,8 +337,10 @@ function loadPreset(p, slot) {
 
 async function openSyx(file) {
   if (!file) return;
-  const res = await fetch("/api/syx", { method: "POST", body: await file.arrayBuffer() });
-  const data = await res.json();
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const data = globalThis.vlpTransport
+    ? await globalThis.vlpTransport("/api/syx", bytes)
+    : await (await fetch("/api/syx", { method: "POST", body: bytes })).json();
   if (!data.ok) return hint(`${file.name}: ${data.message}`);
   if (data.presets.length === 1) {
     loadPreset(data.presets[0]);
@@ -453,10 +458,11 @@ $("#export").onclick = () => {
   form.method = "POST";
   form.action = "/api/export";
   document.body.append(form);
-  fetch("/api/export", {
-    method: "POST",
-    body: JSON.stringify({ name: $("#preset-name").value, values: state.values, tags: state.tags, slot: state.slot || 0 }),
-  }).then((r) => r.blob()).then((blob) => {
+  const payload = { name: $("#preset-name").value, values: state.values, tags: state.tags, slot: state.slot || 0 };
+  (globalThis.vlpTransport
+    ? globalThis.vlpTransport("/api/export", payload).then((bytes) => new Blob([bytes]))
+    : fetch("/api/export", { method: "POST", body: JSON.stringify(payload) }).then((r) => r.blob())
+  ).then((blob) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = ($("#preset-name").value || "preset").replace(/\s+/g, " ").trim() + ".syx";

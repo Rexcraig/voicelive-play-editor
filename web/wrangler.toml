@@ -1,0 +1,17 @@
+# Browser-only editor, served as a Cloudflare Worker with static assets (Pages can't serve a sub-path).
+# Settings per Verona, which holds the Cloudflare setup for occhiphoto.com.
+# Deploy with tools/deploy_web.sh, which reads the API token from ~/.cloudflare/vlp-deploy-token.
+name = "vlp-editor"
+compatibility_date = "2026-09-01"
+
+[assets]
+directory = "./public"
+
+# The Worker sees the whole path, so /vlp/index.html is served from public/vlp/index.html.
+[[routes]]
+pattern = "occhiphoto.com/vlp*"
+zone_name = "occhiphoto.com"
+
+[[routes]]
+pattern = "www.occhiphoto.com/vlp*"
+zone_name = "occhiphoto.com"

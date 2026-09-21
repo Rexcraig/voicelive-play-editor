@@ -1,0 +1,1443 @@
+{
+  "blocks": [
+    {
+      "help": "Adds sung harmony lines above or below the lead.",
+      "id": "harmony",
+      "title": "Harmony"
+    },
+    {
+      "help": "Stacks copies of the voice for a thicker, produced sound.",
+      "id": "double",
+      "title": "Doubling"
+    },
+    {
+      "help": "Sense of room, from a small studio to an arena.",
+      "id": "reverb",
+      "title": "Reverb"
+    },
+    {
+      "help": "Repeats, or echoes, of the voice.",
+      "id": "delay",
+      "title": "Delay"
+    },
+    {
+      "help": "Chorus, flange and stranger movement effects.",
+      "id": "umod",
+      "title": "Voice Modulation"
+    },
+    {
+      "help": "Pitch correction, from gentle to the hard Auto-Tune sound.",
+      "id": "hardtune",
+      "title": "HardTune"
+    },
+    {
+      "help": "Megaphone, radio, phone and amp-style distortion. Called Transducer on the pedal.",
+      "id": "megaphone",
+      "title": "Megaphone & Distortion"
+    }
+  ],
+  "defaults": [
+    -50,
+    0,
+    3,
+    0,
+    0,
+    -5,
+    -6,
+    -8,
+    -25,
+    -21,
+    100,
+    100,
+    100,
+    0,
+    0,
+    120,
+    500,
+    500,
+    50,
+    2,
+    0,
+    108,
+    1,
+    0,
+    30,
+    -4,
+    59,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    5,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "name_chars": " !$%&'+-./0123456789=?ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  "name_length": 15,
+  "params": [
+    {
+      "block": "harmony",
+      "confirmed": true,
+      "help": "",
+      "kind": "state",
+      "label": "Harmony",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 33
+    },
+    {
+      "block": "harmony",
+      "confirmed": true,
+      "help": "Which harmony lines the pedal sings with you: above, below, or both, and how many voices.",
+      "kind": "choice",
+      "label": "Voicing",
+      "max": null,
+      "min": null,
+      "options": [
+        "High",
+        "Higher",
+        "Low",
+        "Lower",
+        "Octave Up",
+        "Octave Down",
+        "High & Low",
+        "High & Higher",
+        "High & Lower",
+        "Higher & Lower",
+        "Higher & Low",
+        "Lower & Low",
+        "Octave Down & Up",
+        "Octave Down & Higher",
+        "Octave Down & High",
+        "Octave Down & Low",
+        "Octave Down & Lower",
+        "Octave Up & Higher",
+        "Octave Up & High",
+        "Octave Up & Low",
+        "Octave Up & Lower",
+        "+7 semitones",
+        "-5 semitones",
+        "+7 & -5 semitones",
+        "+12 & +7 semitones",
+        "+12 & -5 semitones",
+        "-12 & +7 semitones",
+        "-12 & -5 semitones"
+      ],
+      "slot": 1
+    },
+    {
+      "block": "harmony",
+      "confirmed": true,
+      "help": "The song's key, so the harmonies stay in tune. Auto follows what the pedal hears you sing.",
+      "kind": "choice",
+      "label": "Key",
+      "max": null,
+      "min": null,
+      "options": [
+        "Auto (follows input)",
+        "C",
+        "C#",
+        "D",
+        "D#",
+        "E",
+        "F",
+        "F#",
+        "G",
+        "G#",
+        "A",
+        "A#",
+        "B"
+      ],
+      "slot": 2
+    },
+    {
+      "block": "harmony",
+      "confirmed": false,
+      "help": "Which scale the harmony notes are picked from inside the key. The variations shift a few notes each, so try them if a harmony sounds sour.",
+      "kind": "choice",
+      "label": "Scale",
+      "max": null,
+      "min": null,
+      "options": [
+        "Major 1",
+        "Major 2",
+        "Major 3",
+        "Minor 1",
+        "Minor 2",
+        "Minor 3"
+      ],
+      "slot": 3
+    },
+    {
+      "block": "harmony",
+      "confirmed": true,
+      "help": "How loud the harmony voices are against your own.",
+      "kind": "db",
+      "label": "Level",
+      "max": 0,
+      "min": -35,
+      "options": null,
+      "slot": 5
+    },
+    {
+      "block": "double",
+      "confirmed": true,
+      "help": "",
+      "kind": "state",
+      "label": "Doubling",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 34
+    },
+    {
+      "block": "double",
+      "confirmed": true,
+      "help": "How many copies of your voice are added and how closely they follow it. Wider styles spread them left and right.",
+      "kind": "choice",
+      "label": "Style",
+      "max": null,
+      "min": null,
+      "options": [
+        "1 Voice Tight",
+        "1 Voice Loose",
+        "2 Voices Tight",
+        "2 Voices Loose",
+        "Shout",
+        "1 Voice Octave Up",
+        "1 Voice Octave Down",
+        "2 Voices Octave Up",
+        "2 Voices Octave Down",
+        "Octave Up & Down"
+      ],
+      "slot": 4
+    },
+    {
+      "block": "double",
+      "confirmed": true,
+      "help": "How loud the copies are against your own voice.",
+      "kind": "db",
+      "label": "Level",
+      "max": 0,
+      "min": -36,
+      "options": null,
+      "slot": 6
+    },
+    {
+      "block": "reverb",
+      "confirmed": true,
+      "help": "",
+      "kind": "state",
+      "label": "Reverb",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 32
+    },
+    {
+      "block": "reverb",
+      "confirmed": true,
+      "help": "The kind of space: plates and rooms are tight, halls and arenas are big.",
+      "kind": "choice",
+      "label": "Style",
+      "max": null,
+      "min": null,
+      "options": [
+        "Smooth Plate",
+        "Reflection Plate",
+        "Thin Plate",
+        "Bright Plate",
+        "Real Plate",
+        "Real Plate Long",
+        "Jazz Plate",
+        "Quick Plate",
+        "Soft Hall",
+        "Amsterdam Hall",
+        "Broadway Hall",
+        "Snappy Room",
+        "Library",
+        "Dark Room",
+        "Music Club",
+        "Studio Room",
+        "Warehouse",
+        "Bouncy Room",
+        "Bright Chamber",
+        "Wooden Chamber",
+        "St. Joseph Church",
+        "Dome Chapel",
+        "Hockey Arena",
+        "Museum",
+        "Indoor Arena",
+        "Cozy Corner",
+        "Thin Spring",
+        "Full Spring"
+      ],
+      "slot": 20
+    },
+    {
+      "block": "reverb",
+      "confirmed": true,
+      "help": "How long the reverb tail lasts after you stop singing.",
+      "kind": "range",
+      "label": "Decay",
+      "max": 300,
+      "min": 1,
+      "options": null,
+      "slot": 21
+    },
+    {
+      "block": "reverb",
+      "confirmed": true,
+      "help": "How loud the reverb is against your voice.",
+      "kind": "db",
+      "label": "Level",
+      "max": 0,
+      "min": -51,
+      "options": null,
+      "slot": 9
+    },
+    {
+      "block": "delay",
+      "confirmed": true,
+      "help": "",
+      "kind": "state",
+      "label": "Delay",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 31
+    },
+    {
+      "block": "delay",
+      "confirmed": true,
+      "help": "The echo pattern: single repeats, rhythmic ones that follow the tempo, or ping-pong between left and right.",
+      "kind": "choice",
+      "label": "Style",
+      "max": null,
+      "min": null,
+      "options": [
+        "Quarter",
+        "Eighth",
+        "Triplet",
+        "Dotted 1/8",
+        "Dotted 1/4",
+        "1/4 Triplet",
+        "Sixteenth",
+        "Ping Pong 1",
+        "Ping Pong 2",
+        "Ping Pong 3",
+        "Multitap 1",
+        "Multitap 2",
+        "Multitap 3",
+        "Multitap 4",
+        "Multitap 5",
+        "Multitap 6",
+        "Classic Slap",
+        "Set Time"
+      ],
+      "slot": 14
+    },
+    {
+      "block": "delay",
+      "confirmed": false,
+      "help": "How long before the echo repeats on the left, in milliseconds. Only styles that don't follow the tempo use it.",
+      "kind": "range",
+      "label": "Time L (ms)",
+      "max": 2400,
+      "min": 6,
+      "options": null,
+      "slot": 16
+    },
+    {
+      "block": "delay",
+      "confirmed": false,
+      "help": "How long before the echo repeats on the right, in milliseconds. Only styles that don't follow the tempo use it.",
+      "kind": "range",
+      "label": "Time R (ms)",
+      "max": 2400,
+      "min": 6,
+      "options": null,
+      "slot": 17
+    },
+    {
+      "block": "delay",
+      "confirmed": true,
+      "help": "How many times each echo repeats before fading away.",
+      "kind": "range",
+      "label": "Feedback",
+      "max": 100,
+      "min": 0,
+      "options": null,
+      "slot": 18
+    },
+    {
+      "block": "delay",
+      "confirmed": false,
+      "help": "The tone of the repeats. Tape and analog styles get duller with each one, like older echo machines.",
+      "kind": "choice",
+      "label": "Filter",
+      "max": null,
+      "min": null,
+      "options": [
+        "Digital",
+        "Tape",
+        "Analog",
+        "Radio",
+        "Megaphone",
+        "Cell Phone",
+        "Lo-Fi",
+        "Hi Cut 1",
+        "Hi Cut 2",
+        "Hi Cut 3",
+        "Low Cut 1",
+        "Low Cut 2",
+        "Low Cut 3"
+      ],
+      "slot": 19
+    },
+    {
+      "block": "delay",
+      "confirmed": true,
+      "help": "How loud the echoes are against your voice.",
+      "kind": "db",
+      "label": "Level",
+      "max": 0,
+      "min": -51,
+      "options": null,
+      "slot": 8
+    },
+    {
+      "block": "umod",
+      "confirmed": false,
+      "help": "",
+      "kind": "state",
+      "label": "Voice Modulation",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 30
+    },
+    {
+      "block": "umod",
+      "confirmed": true,
+      "help": "The kind of movement added: chorus, flanging, rotating speaker and stranger effects.",
+      "kind": "choice",
+      "label": "Style",
+      "max": null,
+      "min": null,
+      "options": [
+        "MicroMod Clone",
+        "MicroMod Wider",
+        "Thicken",
+        "Light Chorus",
+        "Medium Chorus",
+        "Wide Chorus",
+        "Mono Chorus",
+        "Fast Rotor",
+        "Panner",
+        "Flanger",
+        "Flange Feedback",
+        "Flange Negative",
+        "Mono Flange",
+        "Soft Flange",
+        "Tube",
+        "Up Tube",
+        "Down Tube",
+        "Down & Up Tube",
+        "Rise and Fall",
+        "Auto Wah",
+        "Underwater",
+        "Cylon Mono",
+        "Cylon Stereo",
+        "Alien Voiceover"
+      ],
+      "slot": 13
+    },
+    {
+      "block": "umod",
+      "confirmed": true,
+      "help": "How loud the modulation effect is against your voice.",
+      "kind": "db",
+      "label": "Level",
+      "max": 0,
+      "min": -51,
+      "options": null,
+      "slot": 7
+    },
+    {
+      "block": "hardtune",
+      "confirmed": true,
+      "help": "",
+      "kind": "state",
+      "label": "HardTune",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 36
+    },
+    {
+      "block": "hardtune",
+      "confirmed": true,
+      "help": "How hard your pitch is pushed to the nearest note, from gentle correction to the hard Auto-Tune sound.",
+      "kind": "choice",
+      "label": "Style",
+      "max": null,
+      "min": null,
+      "options": [
+        "Pop",
+        "Country Gliss",
+        "Robot",
+        "Correct Natural",
+        "Correct Chromatic",
+        "Drone",
+        "Gender Bender"
+      ],
+      "slot": 27
+    },
+    {
+      "block": "hardtune",
+      "confirmed": true,
+      "help": "Moves your voice up or down in semitones.",
+      "kind": "range",
+      "label": "Shift (semitones)",
+      "max": 24,
+      "min": -36,
+      "options": null,
+      "slot": 28
+    },
+    {
+      "block": "hardtune",
+      "confirmed": true,
+      "help": "Changes the character of the voice: lower sounds bigger and deeper, higher sounds thinner and brighter.",
+      "kind": "range",
+      "label": "Gender",
+      "max": 50,
+      "min": -50,
+      "options": null,
+      "slot": 29
+    },
+    {
+      "block": "megaphone",
+      "confirmed": true,
+      "help": "",
+      "kind": "state",
+      "label": "Transducer",
+      "max": null,
+      "min": null,
+      "options": null,
+      "slot": 35
+    },
+    {
+      "block": "megaphone",
+      "confirmed": true,
+      "help": "The voice it imitates: megaphone, radio, telephone or a guitar amp.",
+      "kind": "choice",
+      "label": "Style",
+      "max": null,
+      "min": null,
+      "options": [
+        "Megaphone",
+        "Radio",
+        "On the Phone",
+        "Overdrive",
+        "Buzz Cut",
+        "Stack",
+        "Tweed",
+        "Combo"
+      ],
+      "slot": 22
+    },
+    {
+      "block": "megaphone",
+      "confirmed": true,
+      "help": "How hard the sound is pushed, from slight grit to full distortion.",
+      "kind": "range",
+      "label": "Drive",
+      "max": 100,
+      "min": 0,
+      "options": null,
+      "slot": 24
+    },
+    {
+      "block": "megaphone",
+      "confirmed": true,
+      "help": "The tone of the distortion, from thin and boxy to full and open.",
+      "kind": "range",
+      "label": "Filter",
+      "max": 100,
+      "min": 0,
+      "options": null,
+      "slot": 26
+    },
+    {
+      "block": "global",
+      "confirmed": false,
+      "help": "The song's tempo. Delay styles that follow the beat use it, so their echoes stay in time.",
+      "kind": "range",
+      "label": "Tempo (BPM)",
+      "max": 300,
+      "min": 25,
+      "options": null,
+      "slot": 15
+    }
+  ],
+  "rig": [
+    {
+      "id": "mic",
+      "options": [
+        {
+          "id": "dynamic",
+          "label": "A normal stage mic",
+          "note": "SM58, KSM8, Beta 58 and the like."
+        },
+        {
+          "id": "condenser",
+          "label": "A condenser mic",
+          "note": "Needs phantom power from the pedal."
+        },
+        {
+          "id": "mp75",
+          "label": "A TC-Helicon MP-75",
+          "note": "The mic with one button on it."
+        },
+        {
+          "id": "mp76",
+          "label": "A TC-Helicon MP-76",
+          "note": "The mic with four buttons on it."
+        },
+        {
+          "id": "e835",
+          "label": "A Shure E835FX",
+          "note": ""
+        },
+        {
+          "id": "roomsense",
+          "label": "Nothing \u2014 the pedal's own mics",
+          "note": "Only heard in headphones."
+        }
+      ],
+      "question": "What do you sing into?"
+    },
+    {
+      "id": "wireless",
+      "options": [
+        {
+          "id": "yes",
+          "label": "Yes",
+          "note": "The mic sends to a receiver box."
+        },
+        {
+          "id": "no",
+          "label": "No",
+          "note": "The mic cable goes straight into the pedal."
+        }
+      ],
+      "question": "Is the microphone on a wireless system?",
+      "when": {
+        "mic": [
+          "dynamic",
+          "condenser",
+          "mp75",
+          "mp76",
+          "e835"
+        ]
+      }
+    },
+    {
+      "id": "outputs",
+      "options": [
+        {
+          "id": "one",
+          "label": "One cable, to an amp or a PA",
+          "note": ""
+        },
+        {
+          "id": "two",
+          "label": "Two cables, left and right, to a PA",
+          "note": ""
+        },
+        {
+          "id": "separate",
+          "label": "Two cables, voice and effects apart",
+          "note": "Only if a sound engineer asked for them separately."
+        },
+        {
+          "id": "phones",
+          "label": "Headphones only",
+          "note": "For practising."
+        }
+      ],
+      "question": "How does the sound get out of the pedal?"
+    },
+    {
+      "id": "aux",
+      "options": [
+        {
+          "id": "nothing",
+          "label": "Nothing",
+          "note": ""
+        },
+        {
+          "id": "band",
+          "label": "A feed from the band, or an instrument",
+          "note": ""
+        },
+        {
+          "id": "tracks",
+          "label": "Backing tracks I sing along to",
+          "note": ""
+        },
+        {
+          "id": "monitor",
+          "label": "Something I just want to hear",
+          "note": "Not sung along with."
+        }
+      ],
+      "question": "Is anything plugged into the Aux socket?"
+    },
+    {
+      "id": "key",
+      "options": [
+        {
+          "id": "myself",
+          "label": "I set it myself",
+          "note": "It stays put until you change it."
+        },
+        {
+          "id": "follow",
+          "label": "It should work it out from the music",
+          "note": ""
+        }
+      ],
+      "question": "How should the pedal know the song's key for harmonies?"
+    },
+    {
+      "id": "switch3",
+      "note": "The optional Switch-3 that plugs into the back.",
+      "options": [
+        {
+          "id": "none",
+          "label": "No",
+          "note": ""
+        },
+        {
+          "id": "loop",
+          "label": "Yes, for the looper",
+          "note": ""
+        },
+        {
+          "id": "effects",
+          "label": "Yes, to switch effects on and off",
+          "note": "Harmony, Delay and Reverb."
+        }
+      ],
+      "question": "Do you use a three-button footswitch?"
+    },
+    {
+      "id": "mp75button",
+      "options": [
+        {
+          "id": "hit",
+          "label": "HIT",
+          "note": "Turns the preset's big effects on and off."
+        },
+        {
+          "id": "talk",
+          "label": "HIT, and mute for talking",
+          "note": "Hold it to talk without effects."
+        },
+        {
+          "id": "preset",
+          "label": "Next preset",
+          "note": ""
+        },
+        {
+          "id": "loop",
+          "label": "Looper",
+          "note": ""
+        }
+      ],
+      "question": "What should the button on the MP-75 do?",
+      "when": {
+        "mic": [
+          "mp75"
+        ]
+      }
+    },
+    {
+      "id": "mp76buttons",
+      "options": [
+        {
+          "id": "default",
+          "label": "The standard layout",
+          "note": "What the mic does out of the box."
+        },
+        {
+          "id": "keep",
+          "label": "Leave my own assignments alone",
+          "note": ""
+        }
+      ],
+      "question": "How should the four MP-76 buttons work?",
+      "when": {
+        "mic": [
+          "mp76"
+        ]
+      }
+    }
+  ],
+  "setup": [
+    {
+      "fields": [
+        {
+          "help": "Which input the pedal listens to. Match it to the microphone you plug in, so the pedal can tune its preamp for that type. USB Left/Right takes sound from a computer instead.",
+          "index": 9,
+          "kind": "choice",
+          "label": "Input",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Dynamic Mic",
+            "Condenser Mic",
+            "MP-75 Mic",
+            "E835FX Mic",
+            "MP-76 Mic",
+            "USB Left",
+            "USB Right",
+            "RoomSense"
+          ],
+          "unit": null
+        },
+        {
+          "help": "The two small microphones built into the pedal. Ambient picks up the room for your headphone mix. Ambient/Auto also listens to the music to work out its key, so harmonies can follow the band. Voice uses them instead of a microphone, and is heard in headphones only.",
+          "index": 28,
+          "kind": "choice",
+          "label": "RoomSense",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Ambient",
+            "Ambient/Auto",
+            "Voice"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What is plugged into the Aux socket. Live suits a band or instrument feed, Tracks suits pre-recorded music you sing along to, and Monitor lets you hear it without using it to work out the key.",
+          "index": 31,
+          "kind": "choice",
+          "label": "Aux In Type",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Live",
+            "Tracks",
+            "Monitor"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Automatic EQ, compression and gating on the lead voice. Normal suits most singers. The NG versions leave the gate off, so a very quiet voice is never cut off.",
+          "index": 30,
+          "kind": "choice",
+          "label": "Tone Style",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "Normal",
+            "Less Bright",
+            "Norm+Warmth",
+            "More Comp",
+            "Norm No Gate",
+            "Less Bright NG",
+            "Warmth NG",
+            "More Comp NG"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Gentle automatic tuning applied to everything you sing. Off leaves the voice untouched; higher amounts pull harder towards the nearest note, up to a hard Auto-Tune effect.",
+          "index": 8,
+          "kind": "percent",
+          "label": "Pitch Correction",
+          "max": 100,
+          "min": 0,
+          "note": "Global: runs on every preset, even with every effect switched off. The Editor shows it under HardTune.",
+          "options": null,
+          "unit": null
+        }
+      ],
+      "help": "Which mic is plugged in, and how the pedal treats the voice before any effects.",
+      "id": "input",
+      "title": "Input"
+    },
+    {
+      "fields": [
+        {
+          "help": "How the two XLR outputs are used. Stereo sends the whole sound to both. Mono sends your dry voice out Left and all effects out Right, for a sound engineer who wants them separate. Dual Mono sends voice and effects out Left, and anything from Aux out Right. With only one cable in Left, Mono means no effects are heard.",
+          "index": 6,
+          "kind": "choice",
+          "label": "Output",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Stereo",
+            "Mono",
+            "Dual Mono"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Level of the sound the pedal sends to a computer over USB.",
+          "index": 1,
+          "kind": "step",
+          "label": "USB Out",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": null,
+          "unit": "dB"
+        },
+        {
+          "help": "Tries to remove the lead vocal from music coming in on Aux, so you can sing along karaoke style. How well it works varies from song to song.",
+          "index": 35,
+          "kind": "onoff",
+          "label": "Vocal Cancel",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Where the headphone limiter starts holding the volume back, to protect your ears.",
+          "index": 34,
+          "kind": "step",
+          "label": "Headphone Limit",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": null,
+          "unit": "dB"
+        },
+        {
+          "help": "Removes your own voice from the output, leaving only the processed sounds such as harmonies.",
+          "index": 19,
+          "kind": "onoff",
+          "label": "Lead Mute",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Whether music coming in on Aux is also sent to the PA, or stays in your headphones only.",
+          "index": 32,
+          "kind": "onoff",
+          "label": "Aux to Main Out",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        }
+      ],
+      "help": "How sound leaves the pedal: to the PA, headphones and USB.",
+      "id": "output",
+      "title": "Output"
+    },
+    {
+      "fields": [
+        {
+          "help": "Keeps the key you set for harmonies when you change presets, instead of each preset bringing its own.",
+          "index": 17,
+          "kind": "onoff",
+          "label": "Global Key",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Keeps the tempo you tapped when you change presets, so delays stay in time from song to song.",
+          "index": 15,
+          "kind": "onoff",
+          "label": "Global Tempo",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Extra gain for quiet sources. Off suits a line-level source such as a wireless receiver; Low or High suit a microphone plugged straight in. Watch the pedal's input light while singing loudly: it should never sit red.",
+          "index": 36,
+          "kind": "choice",
+          "label": "Mic Boost",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "Low",
+            "High"
+          ],
+          "unit": null
+        }
+      ],
+      "help": "Settings that stay put when you change presets.",
+      "id": "global",
+      "title": "Global"
+    },
+    {
+      "fields": [
+        {
+          "help": "What the looper records: your voice with its effects, the Aux input, or both together.",
+          "index": 7,
+          "kind": "choice",
+          "label": "Loop Input",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Lead Mix",
+            "Aux",
+            "Lead Mix and Aux"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Keeps the last loop layer undoable. On gives 15 seconds of loop time; Off doubles it to 30 seconds.",
+          "index": 24,
+          "kind": "onoff",
+          "label": "Undo",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "How loud the existing layers stay when you record another one. Around 90% stops a loop getting louder with every pass.",
+          "index": 23,
+          "kind": "percent",
+          "label": "Loop Feedback",
+          "max": 100,
+          "min": 0,
+          "note": null,
+          "options": null,
+          "unit": null
+        }
+      ],
+      "help": "How the looper records.",
+      "id": "loop",
+      "title": "Loop"
+    },
+    {
+      "fields": [
+        {
+          "help": "How dark the pedal's own screen looks. Adjust it for the light you play in.",
+          "index": 21,
+          "kind": "step",
+          "label": "LCD Contrast",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": null,
+          "unit": ""
+        },
+        {
+          "help": "The tuning everything is measured against. 440.0 Hz is standard; change it to match instruments tuned elsewhere.",
+          "index": 14,
+          "kind": "hz2",
+          "label": "Tune Reference",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": null,
+          "unit": "Hz"
+        },
+        {
+          "help": "What pressing both footswitches together does: start looping, or set the key for harmonies.",
+          "index": 22,
+          "kind": "choice",
+          "label": "Up/Dn Function",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Looping",
+            "Set Key"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Volume of the reference note in the pedal's Practice screen.",
+          "index": 13,
+          "kind": "step",
+          "label": "Pitch Pipe Level",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": null,
+          "unit": "dB"
+        },
+        {
+          "help": "Delays your dry voice very slightly so harmonies line up exactly with it. None is the most immediate. Voice Sync always aligns by the same amount. Auto aligns by how many effects are running.",
+          "index": 18,
+          "kind": "choice",
+          "label": "Lead Delay",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "None",
+            "Voice Sync",
+            "Auto"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Cuts low rumble picked up by the pedal's built-in room microphones, such as stage noise or air conditioning.",
+          "index": 43,
+          "kind": "locut",
+          "label": "RoomSense Low Cut",
+          "max": 112,
+          "min": 0,
+          "note": null,
+          "options": null,
+          "unit": null
+        }
+      ],
+      "help": "The screen, tuning and how the pedal itself behaves.",
+      "id": "system",
+      "title": "System"
+    },
+    {
+      "fields": [
+        {
+          "help": "Whether an optional three-button footswitch runs the looper with fixed functions, or the three assignments you choose below.",
+          "index": 37,
+          "kind": "choice",
+          "label": "Control",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Loop Mode",
+            "Custom"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Harmony sounds only while a footswitch is held down, instead of switching on and off with each press.",
+          "index": 38,
+          "kind": "onoff",
+          "label": "Harm Moment",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Delay sounds only while a footswitch is held down.",
+          "index": 39,
+          "kind": "onoff",
+          "label": "Delay Moment",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Off",
+            "On"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the first button on an optional three-button footswitch does. It applies when Control is set to Custom.",
+          "index": 40,
+          "kind": "choice",
+          "label": "Switch 1",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Loop Rec/Play",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Loop Start/Stop",
+            "1 Button Looper",
+            "Tap Tempo",
+            "Harmony",
+            "Delay",
+            "uMod",
+            "Transducer",
+            "HardTune",
+            "Doubling",
+            "Reverb"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the second button on an optional three-button footswitch does. It applies when Control is set to Custom.",
+          "index": 41,
+          "kind": "choice",
+          "label": "Switch 2",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Loop Rec/Play",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Loop Start/Stop",
+            "1 Button Looper",
+            "Tap Tempo",
+            "Harmony",
+            "Delay",
+            "uMod",
+            "Transducer",
+            "HardTune",
+            "Doubling",
+            "Reverb"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the third button on an optional three-button footswitch does. It applies when Control is set to Custom.",
+          "index": 42,
+          "kind": "choice",
+          "label": "Switch 3",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Loop Rec/Play",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Loop Start/Stop",
+            "1 Button Looper",
+            "Tap Tempo",
+            "Harmony",
+            "Delay",
+            "uMod",
+            "Transducer",
+            "HardTune",
+            "Doubling",
+            "Reverb"
+          ],
+          "unit": null
+        }
+      ],
+      "help": "What the optional three-button footswitch does. Switches 1-3 apply when Control is Custom.",
+      "id": "switch3",
+      "title": "Switch-3"
+    },
+    {
+      "fields": [
+        {
+          "help": "What the button on a TC-Helicon MP-75 microphone does.",
+          "index": 20,
+          "kind": "choice",
+          "label": "MP-75 Control",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "HIT",
+            "HIT + Talk",
+            "Preset Up",
+            "Loop"
+          ],
+          "unit": null
+        },
+        {
+          "help": "Whether a TC-Helicon MP-76 microphone uses its standard button layout, or the four assignments you choose below.",
+          "index": 48,
+          "kind": "choice",
+          "label": "MP-76 Control",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Default",
+            "Custom"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the top button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+          "index": 47,
+          "kind": "choice",
+          "label": "MP-76 Top",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Preset Down",
+            "Preset Up",
+            "HIT",
+            "HIT + Talk",
+            "HIT + Tap",
+            "Loop",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Tap Tempo",
+            "uMod",
+            "Delay",
+            "Delay Moment",
+            "Reverb",
+            "Harmony",
+            "Harm Moment",
+            "Doubling",
+            "Transducer",
+            "HardTune"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the bottom button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+          "index": 45,
+          "kind": "choice",
+          "label": "MP-76 Bottom",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Preset Down",
+            "Preset Up",
+            "HIT",
+            "HIT + Talk",
+            "HIT + Tap",
+            "Loop",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Tap Tempo",
+            "uMod",
+            "Delay",
+            "Delay Moment",
+            "Reverb",
+            "Harmony",
+            "Harm Moment",
+            "Doubling",
+            "Transducer",
+            "HardTune"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the left button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+          "index": 46,
+          "kind": "choice",
+          "label": "MP-76 Left",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Preset Down",
+            "Preset Up",
+            "HIT",
+            "HIT + Talk",
+            "HIT + Tap",
+            "Loop",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Tap Tempo",
+            "uMod",
+            "Delay",
+            "Delay Moment",
+            "Reverb",
+            "Harmony",
+            "Harm Moment",
+            "Doubling",
+            "Transducer",
+            "HardTune"
+          ],
+          "unit": null
+        },
+        {
+          "help": "What the right button on an MP-76 microphone does. It applies when MP-76 Control is set to Custom.",
+          "index": 44,
+          "kind": "choice",
+          "label": "MP-76 Right",
+          "max": null,
+          "min": null,
+          "note": null,
+          "options": [
+            "Preset Down",
+            "Preset Up",
+            "HIT",
+            "HIT + Talk",
+            "HIT + Tap",
+            "Loop",
+            "Loop Stop/Clear",
+            "Loop Undo",
+            "Tap Tempo",
+            "uMod",
+            "Delay",
+            "Delay Moment",
+            "Reverb",
+            "Harmony",
+            "Harm Moment",
+            "Doubling",
+            "Transducer",
+            "HardTune"
+          ],
+          "unit": null
+        }
+      ],
+      "help": "What the buttons on a TC-Helicon MP-75 or MP-76 mic do. The four MP-76 buttons apply when MP-76 Control is Custom.",
+      "id": "mic",
+      "title": "Mic Control"
+    }
+  ],
+  "tags": 12,
+  "version": "0.3"
+}
