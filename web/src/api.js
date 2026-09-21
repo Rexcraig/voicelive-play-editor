@@ -87,12 +87,12 @@ async function savePreset(slot, { name, tags, params }) {
 async function loadSet(setName, start, presets) {
   const folder = `backups/${stamp()} before set ${safeName(setName)}`;
   const written = [], unchanged = [];
-  let slot = null;
+  let slot = null, backedUp = false;  // no folder is named unless something was really backed up
   const stopped = (problem) => {
     const last = slot ? slot - 1 : start - 1;
     const done = last > start ? `Presets ${start}–${last} are loaded.`
       : last === start ? `Preset ${start} is loaded.` : "No presets were changed.";
-    return { ok: false, written, unchanged, backups: folder, failed: slot,
+    return { ok: false, written, unchanged, backups: backedUp ? folder : null, failed: slot,
              message: `Loading stopped at preset ${slot || start}: ${problem} ${done}` };
   };
   try {
@@ -103,7 +103,10 @@ async function loadSet(setName, start, presets) {
         const old = await midi.readSlot(link, slot);
         const same = old && old.name === name && old.tags === tags && old.params.every((v, i) => v === params[i]);
         if (same) { unchanged.push(slot); continue; }
-        if (old) await backupSlot(`${folder}/preset ${String(slot).padStart(3, "0")} ${safeName(old.name)}.syx`, slot, old);
+        if (old) {
+          await backupSlot(`${folder}/preset ${String(slot).padStart(3, "0")} ${safeName(old.name)}.syx`, slot, old);
+          backedUp = true;
+        }
         const { ok, back } = await midi.writeSlot(link, slot, name, tags, params);
         if (back) store.noteSlot(slot, back, ok ? "saved" : "read");
         if (!ok) return `it didn't save correctly. Check preset ${slot} on the pedal.`;
@@ -116,7 +119,7 @@ async function loadSet(setName, start, presets) {
     if (!(e instanceof PedalError)) throw e;
     return stopped(e.message);
   }
-  return { ok: true, written, unchanged, backups: folder };
+  return { ok: true, written, unchanged, backups: backedUp ? folder : null };
 }
 
 async function writeSetup(pairs) {
@@ -124,7 +127,7 @@ async function writeSetup(pairs) {
   if (Object.entries(changes).every(([i, v]) => values[i] === v)) return { ok: true, values, message: "sent" };
   const field = (i) => spec.setup.flatMap((p) => p.fields).find((f) => f.index === +i);
   const missed = Object.keys(pairs).filter((i) => field(i) && values[i] !== (changes[i] ?? values[i])).map((i) => field(i).label);
-  const names = missed.join(", ") || field(Object.keys(pairs).sort()[0]).label;
+  const names = missed.join(", ") || field(Object.keys(pairs).map(Number).sort((a, b) => a - b)[0]).label;
   const why = acked ? "kept a different value" : "didn't confirm the change";
   return { ok: false, values, message: `The pedal ${why} for ${names}. The screen shows what it holds now.` };
 }

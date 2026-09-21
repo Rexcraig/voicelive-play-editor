@@ -15,6 +15,7 @@ export CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id
 
 "$PYTHON" tools/gen_spec.py
 "$PYTHON" tools/build_web.py
+./run_tests.sh            # the Python side, including the spec.json staleness guard
 node --test "web/test/*.test.mjs"
 
 if [ "${1:-}" = "--dry-run" ]; then

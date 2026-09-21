@@ -379,7 +379,9 @@ async function openSave() {
   if (!state.pedal) await loadPedal();
   const input = $("#save-slot");
   input.max = state.pedal.capacity;
-  const empty = firstEmpty();
+  // With no picture of the pedal (the browser build starts with none), "first empty" would be slot 1,
+  // which on this pedal holds a real preset. Offer it only when the list is known.
+  const empty = state.pedal.synced ? firstEmpty() : null;
   $("#save-empty").hidden = !empty;
   $("#save-empty").textContent = `Use the first empty slot (${empty})`;
   input.value = state.slot || "";
