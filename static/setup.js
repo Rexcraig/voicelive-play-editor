@@ -1,7 +1,7 @@
 // Setup tab: the pedal's whole-pedal settings (its own Setup button, pages 1-7).
 // Values are read from the pedal; every change is written straight away and the pedal's read-back is shown.
 
-const setup = { values: null, queue: Promise.resolve(), pending: 0 };
+const setup = { values: null, queue: Promise.resolve(), pending: 0, tried: false };
 
 async function openSetupTab(force = false) {
   if (setup.values && !force) return;
@@ -41,16 +41,21 @@ function renderSetup() {
     card.querySelector("p").textContent = page.help;
     const body = document.createElement("div");
     body.className = "card-body";
-    page.fields.forEach((f) => body.append(setupRow(f)));
+    page.fields.forEach((f) => {
+      body.append(setupRow(f));
+      if (f.note) body.append(el("p", "row-note", f.note));
+    });
     card.append(body);
     root.append(card);
   });
+  renderGlobals();
 }
 
 function setupRow(f) {
   const v = setup.values[f.index];
   const row = document.createElement("div");
   row.className = "row";
+  row.dataset.index = f.index;
   row.classList.toggle("inactive", setupInactive(f.index));
   const label = document.createElement("label");
   label.textContent = f.label;
@@ -122,6 +127,10 @@ function setupRow(f) {
     };
     show();
     input.oninput = show;
+    if (f.index === 8) {
+      input.dataset.mirror = 8;
+      input.oninput = () => mirrorPitch(+input.value);
+    }
     input.onchange = () => setupChange(f.index, +input.value);  // on release: one write per drag
     wrap.append(input, out);
     row.append(wrap);
@@ -231,6 +240,135 @@ addEventListener("scroll", hideTip, true);
 addEventListener("pointerdown", (e) => { if (tip.open && !e.target.closest(".info")) hideTip(); });
 
 $("#setup-refresh").onclick = () => openSetupTab(true);
+
+// Setup settings that change the sound of every preset, shown on the Editor so a sound the effect cards
+// don't explain has a visible cause (09-18: Pitch Correction at 65 % was heard as doubling with every effect off).
+function globalSound(v) {
+  const on = [];
+  if (v[8] > 0) on.push([8, `Pitch Correction ${v[8]} %`]);
+  if (v[30] > 0) on.push([30, `Tone Style ${setupField(30).options[v[30]]}`]);
+  if (v[28] === 2) on.push([28, "RoomSense Voice"]);
+  if (v[19] === 1) on.push([19, "Lead Mute On"]);
+  return on;
+}
+
+const setupField = (index) => state.spec.setup.flatMap((p) => p.fields).find((f) => f.index === index);
+
+// Opens the Setup tab at one setting and lights its row for a moment.
+function goToSetting(index) {
+  showTab("setup");
+  openSetupTab().then(() => {
+    const row = document.querySelector(`#setup-pages .row[data-index="${index}"]`);
+    if (!row) return;
+    row.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    row.classList.remove("flash");
+    void row.offsetWidth;  // restart the animation
+    row.classList.add("flash");
+  });
+}
+
+function settingLink(index, text) {
+  const b = el("button", "link", text);
+  b.type = "button";
+  b.title = "Open this setting on the Setup tab";
+  b.onclick = () => goToSetting(index);
+  return b;
+}
+
+// The line under the HardTune card and the line under all the cards. Both say "unknown" rather than guess
+// when the Setup block hasn't been read.
+function renderGlobals() {
+  const v = setup.values;
+  const note = document.querySelector('.card[data-block="hardtune"] .global-note');
+  if (note) renderPitchPanel(note, v);
+  const line = $("#globals");
+  line.innerHTML = "";
+  if (!v) {
+    line.hidden = !state.connected || !setup.tried;
+    line.append("Settings that change every preset: unknown, the pedal's Setup hasn't been read. ", readLink());
+    return;
+  }
+  const on = globalSound(v);
+  line.hidden = !on.length;
+  line.append(el("span", "led"), "Also on for every preset, from Setup: ");
+  // Each item keeps its separator, so a wrapped line never starts with a dot.
+  on.forEach(([index, text], i) => {
+    const item = el("span", "item");
+    item.append(settingLink(index, text), ...(i < on.length - 1 ? [" ·"] : []));
+    line.append(item);
+  });
+}
+
+// Setup's Pitch Correction, repeated under HardTune. Drawn in the Setup colour with its own legend because,
+// unlike everything else on the card, it is kept on the pedal the moment it's let go and applies to every preset.
+function renderPitchPanel(note, v) {
+  const existing = note.querySelector("#global-8");
+  if (v && existing) {  // update in place, so the slider keeps focus after a change
+    existing.disabled = !state.connected;
+    return mirrorPitch(v[8]);
+  }
+  note.innerHTML = "";
+  note.classList.toggle("lit", !!(v && v[8] > 0));
+  const head = el("div", "global-head");
+  head.append(el("span", "led"), el("span", "global-legend", "Global"), settingLink(8, "Setup › Input"));
+  note.append(head);
+  if (!v) {
+    note.append(el("p", "global-caption", setup.tried ? "Pitch Correction: unknown, the pedal's Setup hasn't been read. " : "Reading the pedal…"));
+    if (setup.tried) note.lastChild.append(readLink());
+    return;
+  }
+  const f = setupField(8);
+  const row = el("div", "row");
+  const label = el("label", null, f.label);
+  label.htmlFor = "global-8";
+  label.append(infoButton(f.label, f.help));
+  const wrap = el("div", "slider");
+  const input = el("input");
+  Object.assign(input, { type: "range", id: "global-8", min: f.min, max: f.max, value: v[8] });
+  input.dataset.mirror = 8;
+  input.disabled = !state.connected;
+  const out = el("span", "value");
+  wrap.append(input, out);
+  row.append(label, wrap);
+  note.append(row, el("p", "global-caption", "Kept on the pedal as soon as you let go, for every preset. Save to pedal doesn't store it."));
+  input.oninput = () => mirrorPitch(+input.value);
+  input.onchange = () => setupChange(8, +input.value);
+  mirrorPitch(v[8]);
+}
+
+// Both Pitch Correction sliders (Setup tab and HardTune card) follow each other while one is dragged.
+function mirrorPitch(x) {
+  document.querySelectorAll('input[data-mirror="8"]').forEach((input) => {
+    input.value = x;
+    fill(input);
+    input.nextElementSibling.textContent = x === 0 ? "off" : `${x} %`;
+  });
+  document.querySelector(".global-note")?.classList.toggle("lit", x > 0);
+}
+
+function readLink() {
+  const b = el("button", "link", "Read pedal");
+  b.type = "button";
+  b.onclick = () => refreshSetup();
+  return b;
+}
+
+// Reads the Setup block again. Called when the pedal connects, the window comes back into focus and the
+// Editor tab opens, because the pedal sends nothing when its own Setup menu is used.
+function refreshSetup() {
+  if (!state.connected || setup.pending) return;
+  setup.queue = setup.queue.then(async () => {
+    if (setup.pending) return;
+    const data = await api("/api/setup");
+    setup.tried = true;
+    if (!data.ok || setup.pending) return renderGlobals();
+    const changed = JSON.stringify(data.values) !== JSON.stringify(setup.values);
+    setup.values = data.values;
+    if (changed) renderSetup();
+  });
+}
+
+addEventListener("focus", refreshSetup);
 
 // "Set up my rig": a few questions about how the pedal is plugged in, then the settings that follow from
 // the answers, each with its reason. Asking only reads the pedal; nothing is written until "Apply".

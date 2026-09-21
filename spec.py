@@ -174,7 +174,7 @@ SETUP_PAGES = [
     ("system", "System", "The screen, tuning and how the pedal itself behaves.", [
         (21, "LCD Contrast", "step", ""),
         (14, "Tune Reference", "hz2", "Hz"),
-        (22, "Up + Down Switches", "choice", ["Looping", "Set Key"]),
+        (22, "Up/Dn Function", "choice", ["Looping", "Set Key"]),
         (13, "Pitch Pipe Level", "step", "dB"),
         (18, "Lead Delay", "choice", ["None", "Voice Sync", "Auto"]),
         (43, "RoomSense Low Cut", "locut", (0, 112)),
@@ -196,6 +196,10 @@ SETUP_PAGES = [
         (44, "MP-76 Right", "choice", MP76_FUNCTIONS),
     ]),
 ]
+# A line shown under a setting on the Setup tab, for things its name doesn't make obvious.
+SETUP_NOTES = {
+    8: "Global: runs on every preset, even with every effect switched off. The Editor shows it under HardTune.",
+}
 SETUP_FIELDS = {i: (label, kind, extra) for _, _, _, fields in SETUP_PAGES for i, label, kind, extra in fields}
 
 
@@ -413,7 +417,7 @@ def as_json():
         "version": VERSION,
         "rig": RIG_QUESTIONS,
         "setup": [{"id": i, "title": t, "help": h,
-                   "fields": [{"index": x, "label": l, "kind": k, "help": SETUP_HELP.get(x, ""),
+                   "fields": [{"index": x, "label": l, "kind": k, "help": SETUP_HELP.get(x, ""), "note": SETUP_NOTES.get(x),
                                "options": e if k in ("choice", "onoff") else None,
                                "unit": e if k in ("step", "hz2") else None,
                                "min": e[0] if k in ("percent", "locut") else None,

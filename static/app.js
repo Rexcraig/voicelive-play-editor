@@ -56,9 +56,13 @@ function render() {
     body.className = "card-body";
     for (const p of params.filter((x) => x.kind !== "state")) body.append(control(p));
     card.append(body);
+    // Pitch Correction on the Setup menu works like HardTune on every preset, so it is shown with it,
+    // outside the card body so it stays readable when HardTune is Off.
+    if (block.id === "hardtune") card.append(Object.assign(document.createElement("div"), { className: "global-note" }));
     main.append(card);
     paint(card, stateParam ? state.values[stateParam.slot] : 1);
   }
+  renderGlobals();
 
   // Song-wide settings (tempo) live in the top bar, next to the preset name.
   const song = $("#song");
@@ -223,7 +227,10 @@ function hint(text, source = "action") {
 async function poll() {
   try {
     const { connected } = await (await fetch("/api/status")).json();
+    const wasConnected = state.connected;
     state.connected = connected;
+    if (connected && !wasConnected) refreshSetup();
+    if (connected !== wasConnected) renderGlobals();
     const el = $("#status");
     el.className = "status " + (connected ? "ok" : "bad");
     $("#status-text").textContent = connected ? "Pedal connected" : "Pedal not found";
@@ -242,6 +249,7 @@ function showTab(name) {
   $("#setup").hidden = name !== "setup";
   if (name === "sets") openSetsTab();
   if (name === "setup") openSetupTab();
+  if (name === "editor") refreshSetup();
   if (name === "pedal" && !state.pedalOpened) {
     state.pedalOpened = true;
     loadPedal().then(() => { if (state.connected) readPedal(); });

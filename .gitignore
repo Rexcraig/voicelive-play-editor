@@ -11,3 +11,4 @@ backups/
 # Scratch output
 tools/vs_stdout.txt
 .DS_Store
+docs/

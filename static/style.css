@@ -393,6 +393,32 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focu
 .info.unconfirmed { color: var(--hit); border-color: oklch(0.83 0.14 78 / 0.5); }
 .info.unconfirmed:hover, .info.unconfirmed[aria-expanded="true"] { color: var(--hit); border-color: var(--hit); }
 
+/* Setup settings that change every preset: shown in the Setup colour (phosphor white), never an effect colour */
+.global-note, #globals { --fx: var(--lit); --fx-ink: var(--lit-ink); }
+#globals { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; row-gap: 2px; color: var(--text); font-size: 13px; line-height: 1.45; }
+#globals .led { width: 6px; height: 6px; margin-right: 2px; background: var(--lit); box-shadow: 0 0 6px 1px oklch(0.93 0.035 195 / 0.35); }
+#globals button.link { padding: 0; font-size: inherit; }
+
+/* Pitch Correction under HardTune: an inset Setup panel, not part of the preset */
+.global-note {
+  display: grid; gap: 10px; margin: 0 12px 12px; padding: 10px 12px 12px;
+  background: oklch(0.93 0.035 195 / 0.025); border: 1px dashed oklch(0.93 0.035 195 / 0.22); border-radius: var(--radius-sm);
+}
+.global-head { display: flex; align-items: center; gap: 8px; }
+.global-legend { flex: 1; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.global-note.lit .global-legend { color: var(--lit); }
+.global-head button.link { padding: 0; font-size: 12px; font-weight: 500; }
+.card .global-note .led { width: 6px; height: 6px; background: var(--well); box-shadow: inset 0 0 0 1px var(--line-2); }
+.card .global-note.lit .led { background: var(--lit); box-shadow: 0 0 6px 1px oklch(0.93 0.035 195 / 0.35); }
+.card .global-note input[type="range"] { --fx: var(--lit); }
+.global-caption { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.global-caption button.link { padding: 0; font-size: inherit; }
+#globals { margin: 0 0 12px; }
+#globals .item { white-space: nowrap; }
+.row-note { margin: -6px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--muted); }
+.setup-card .row.flash { animation: row-flash 1.6s var(--ease-out); border-radius: var(--radius-sm); }
+@keyframes row-flash { from { background: oklch(0.93 0.035 195 / 0.14); box-shadow: 0 0 0 6px oklch(0.93 0.035 195 / 0.14); } }
+
 footer { padding: 0 28px 40px; color: var(--muted); font-size: 13px; max-width: 72ch; }
 footer strong { color: var(--text); font-weight: 600; }
 #hint { min-height: 1.2em; color: var(--lit); }

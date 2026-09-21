@@ -54,6 +54,17 @@ Mapped with Will on the unit, 2026-09-17. Index = position in the decoded 75-val
   Delay 10, Delay Moment 11, Reverb 12, Harmony 13, Harm Moment 14, Doubling 15, Transducer 16, HardTune 17
   (Top proven by stepping to 17; Bottom/Left/Right from the photo: Doubling 15, Loop 5, HIT 2)
 
+## MIX button (2 pages; mapped with Will 2026-09-18, snapshots 26-33, read through the editor with tools/mix_probe.py)
+Levels in dB; the box shows bars only. One knob click is 1 dB (Main Out: 1 click = -10 -> -9).
+Page 1/2: Headphone [2], Main Out [0], Loop [33], RoomSense [12]
+Page 2/2: Harmony [5], USB In [3], Delay/Reverb [4], USB Out [1] (same value as Setup > USB Out; not re-tested here)
+- Headphone [2] and RoomSense [12]: -36 = Off (empty bar). Loop [33]: 0 = full bar.
+- Values before mapping: Main Out -10, Headphone -36, Loop 0, RoomSense -36, Harmony -33, USB In -28, Delay/Reverb -36, USB Out 0.
+- Ranges NOT measured: only the ends above were seen.
+- [11] = -5 is not in the MIX menu; still unknown.
+- Headphones do NOT follow Setup > Output: on Mono (09-18) the headphones still carried dry voice + effects together.
+  This unit's headphone socket gives the LEFT side only (two headsets, both modes); the RIGHT XLR works. Hardware fault.
+
 ## Page 8/8 PRODUCT INFO: read-only (firmware 1.4.00 B70)
 
 ## Seen on screen, not yet tested
