@@ -43,6 +43,8 @@ def index_html():
     html = html.replace('<script defer src="./app.js"></script>',
                         '<script type="module" src="./src/boot.js"></script>\n<script defer src="./app.js"></script>')
     html = html.replace("<main id=\"blocks\"></main>", CONNECT.strip() + "\n\n<main id=\"blocks\"></main>")
+    # Not for search engines: this is the singer's tool, not a public page.
+    html = html.replace("<head>", '<head>\n<meta name="robots" content="noindex, nofollow">', 1)
     return html
 
 
@@ -61,6 +63,9 @@ def main():
     for name in SRC:
         shutil.copy2(ROOT / "web/src" / name, OUT / "src" / name)
     shutil.copytree(ROOT / "static/fonts", OUT / "fonts")
+    # Cloudflare serves _headers from the root of the assets folder; keeps the page out of search results.
+    (OUT.parent / "_headers").write_text("/vlp/*\n  X-Robots-Tag: noindex, nofollow\n")
+    (OUT / "robots.txt").write_text("User-agent: *\nDisallow: /\n")
     # Only real attributes: a bare "src" inside a path like ./src/boot.js isn't one.
     left = re.findall(r'(?:src|href)="(/[^"]*)|url\((["\']?)(/[^"\')]*)', (OUT / "index.html").read_text())
     if left:

@@ -13,3 +13,5 @@ tools/vs_stdout.txt
 .DS_Store
 docs/
 web/public/
+
+# Someone else's pedal: never in git
