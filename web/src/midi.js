@@ -14,7 +14,7 @@ const SETUP_PACKETS = 3;  // 15 00 -> three 0x13 packets of 25 values
 
 export class PedalError extends Error {}
 
-const NO_ACCESS = "This browser can't reach MIDI devices. Use Chrome or Edge on a computer.";
+const NO_ACCESS = "This browser can't reach MIDI devices. Use Chrome, Edge or Firefox on a computer; Safari can't do it (tested 2026-09-24).";
 const NOT_FOUND = "VoiceLive Play not found. Check the USB cable, and close VoiceSupport if it's open.";
 
 let access = null;

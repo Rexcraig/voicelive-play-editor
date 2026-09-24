@@ -1,4 +1,4 @@
-VoiceLive Play Editor v0.4 (test version)
+VoiceLive Play Editor v0.5 (test version)
 
 The version is also shown next to "VoiceLive Play" at the top left of the editor. Mention it when you
 report a problem.
@@ -17,7 +17,8 @@ Start
 Tabs
 - Editor: shape a preset. The pedal plays every change straight away; it isn't kept until you save it.
   "Save to pedal" keeps it in a numbered preset.
-- On the pedal: everything saved on the pedal. "Open in editor" to tweak one.
+- On the pedal: everything saved on the pedal. "Open in editor" to tweak one, or "Duplicate" to work on a
+  copy: it opens under a new name with the first free preset number ready, so the original stays as it is.
 - Sets: build a set list, song by song, then "Load onto pedal" to put it in order on the pedal.
 - Setup: the pedal's own setup menu - input, outputs, tuner, foot switches - on one page instead of
   buried in the box. Changes go to the pedal when you pick them.

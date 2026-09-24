@@ -23,7 +23,7 @@ function setStatus(message) {
   const el = document.querySelector("#connect");
   if (!el) return;
   el.hidden = connected;
-  el.querySelector("p").textContent = message || "This editor talks to the pedal through your browser. Chrome will ask once for permission to use MIDI devices.";
+  el.querySelector("p").textContent = message || "This editor talks to the pedal through your browser. It will ask once for permission to use MIDI devices.";
 }
 
 // The UI's first job is to read the spec; everything after that goes through the same transport.

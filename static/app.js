@@ -204,6 +204,20 @@ function pedalName(name, fallback = "UNTITLED") {
   return cleaned || fallback;
 }
 
+// A name for a copy: "TREAT ME RIGHT" -> "TREAT ME RIGHT 2", counting up past any copy already on the
+// pedal, and trimming the front part when the number won't fit in the pedal's 15 characters.
+function copyName(base) {
+  const limit = state.spec.name_length;
+  const stem = pedalName(base).replace(/ \d+$/, "").trimEnd() || "PRESET";
+  const taken = new Set((state.pedal?.presets || []).map((p) => pedalName(p.name)));
+  for (let n = 2; n < 100; n++) {
+    const tail = ` ${n}`;
+    const name = pedalName(stem.slice(0, limit - tail.length).trimEnd() + tail);
+    if (!taken.has(name)) return name;
+  }
+  return pedalName(stem);
+}
+
 async function send() {
   const data = await api("/api/send", { name: $("#preset-name").value, values: state.values, tags: state.tags });
   blinkTx(data.ok);
@@ -320,7 +334,18 @@ function renderPedal() {
     open.onclick = () => {
       loadPreset(p, p.slot);
     };
-    li.append(open);
+    const copy = document.createElement("button");
+    copy.className = "ghost";
+    copy.textContent = "Duplicate";
+    copy.title = "Open a copy of this preset, to change and save somewhere else";
+    copy.onclick = () => {
+      loadPreset({ ...p, name: copyName(p.name) }, null);  // no slot: the copy isn't on the pedal yet
+      openSave({ prefillEmpty: true });
+    };
+    const actions = document.createElement("div");
+    actions.className = "pedal-actions";
+    actions.append(open, copy);
+    li.append(actions);
     list.append(li);
   }
 }
@@ -375,7 +400,7 @@ window.addEventListener("drop", (e) => {
   openSyx(e.dataTransfer.files[0]);
 });
 
-async function openSave() {
+async function openSave({ prefillEmpty = false } = {}) {
   if (!state.pedal) await loadPedal();
   const input = $("#save-slot");
   input.max = state.pedal.capacity;
@@ -384,7 +409,7 @@ async function openSave() {
   const empty = state.pedal.synced ? firstEmpty() : null;
   $("#save-empty").hidden = !empty;
   $("#save-empty").textContent = `Use the first empty slot (${empty})`;
-  input.value = state.slot || "";
+  input.value = state.slot || (prefillEmpty ? empty || "" : "");
   checkSlot();
   $("#save-dialog").showModal();
   input.select();
@@ -431,7 +456,7 @@ function describeSlot({ live = false } = {}) {
   $("#save-confirm").disabled = !valid;
 }
 
-$("#save").onclick = openSave;
+$("#save").onclick = () => openSave();
 $("#save-slot").oninput = checkSlot;
 $("#save-slot").addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;

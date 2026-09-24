@@ -461,6 +461,7 @@ footer strong { color: var(--text); font-weight: 600; }
 .chip.edited { background: oklch(0.80 0.17 148 / 0.14); color: oklch(0.86 0.1 148); }
 .chip.edited::before { background: var(--ok); }
 #pedal-list button { padding: 8px 11px; font-size: 11px; }
+.pedal-actions { display: flex; gap: 8px; justify-content: flex-end; }
 @media (max-width: 700px) {
   #pedal-list li { grid-template-columns: 36px 1fr auto; }
   .chips { grid-column: 2 / -1; grid-row: 2; }
