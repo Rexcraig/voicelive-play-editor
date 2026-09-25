@@ -26,6 +26,7 @@ async function boot() {
   });
   nameInput.addEventListener("change", () => { nameInput.value = nameInput.value.trimEnd(); });
   render();
+  showWhere();
   poll();
   setInterval(poll, 4000);
 }
@@ -180,7 +181,38 @@ function control(p) {
   return row;
 }
 
+// The pedal has one playing spot, owned by the preset number it's on. Anything the editor plays that isn't
+// that stored preset shows on the pedal's screen with its own name under the pedal's current number, which
+// looks broken if nobody says so (the singer, 09-25). This line always says where the sound lives.
+function showWhere() {
+  const el = $("#where");
+  const n = state.slot;
+  let text, title;
+  if (n && state.onPedal && !state.dirty) {
+    text = `Preset ${n} on the pedal`;
+    title = "The pedal is on this preset, and nothing has been changed.";
+  } else if (n && state.onPedal) {
+    text = `Preset ${n} · changed, not saved`;
+    title = "You hear the changes now. Save to pedal keeps them; switching presets on the pedal throws them away.";
+  } else if (n) {
+    text = `Preset ${n} · playing over the pedal's current preset`;
+    title = `The pedal's screen shows this name under whatever number it's on; that's normal. To see ${n} there, step to it with the footswitch. Nothing is saved or lost.`;
+  } else if (!state.playing) {
+    text = "Not on the pedal yet";
+    title = "Change anything and you'll hear it on the pedal straight away. Save to pedal gives it its own number.";
+  } else {
+    text = "Not on the pedal yet · playing over its current preset";
+    title = "The pedal's screen shows this name under whatever number it's on; that's normal, and nothing on the pedal has changed. Save to pedal gives it its own number.";
+  }
+  el.textContent = text;
+  el.title = title;
+  el.classList.toggle("unsaved", !(n && state.onPedal && !state.dirty));
+}
+
 function push() {
+  state.dirty = true;
+  state.playing = true;
+  showWhere();
   clearTimeout(state.timer);
   state.timer = setTimeout(send, 120);
 }
@@ -371,9 +403,6 @@ function renderPedal() {
       // follow, fall back to playing it in the edit buffer, which keeps the pedal's current number.
       const res = state.connected ? await api("/api/pedal/select", { slot: p.slot }) : { switched: false };
       loadPreset(p, p.slot, { play: !res.switched });
-      if (state.connected && !res.switched) {
-        hint(`Playing ${p.name} on the pedal as a preview: the pedal's screen keeps its own preset number until you switch there with the footswitch or Save to pedal.`);
-      }
     };
     const copy = document.createElement("button");
     copy.className = "ghost";
@@ -395,10 +424,13 @@ function loadPreset(p, slot, { play = true } = {}) {
   p.params.forEach((v, i) => (state.values[i] = v));
   state.tags = p.tags;
   state.slot = slot || null;
+  state.onPedal = !play;  // true only when the pedal itself switched to this stored preset
   $("#preset-name").value = p.name;
   render();
   showTab("editor");
   if (play) push();  // not needed when the pedal has just switched to this very preset
+  state.dirty = false;
+  showWhere();
 }
 
 async function openSyx(file) {
@@ -545,7 +577,14 @@ $("#save-confirm").onclick = async (e) => {
   hint(`Saving to preset ${slot}…`);
   const data = await api("/api/save", { name: $("#preset-name").value, values: state.values, tags: state.tags, slot });
   hint(data.message);
-  if (data.ok) state.slot = slot;
+  if (data.ok) {
+    state.slot = slot;
+    state.dirty = false;
+    // Move the pedal onto the preset just saved, so its screen agrees. If the pedal won't switch, the
+    // where-line says it's saved but still playing over the pedal's current number.
+    state.onPedal = !!(await api("/api/pedal/select", { slot })).switched;
+    showWhere();
+  }
   await loadPedal();
 };
 
