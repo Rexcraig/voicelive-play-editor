@@ -1,0 +1,27 @@
+@font-face { font-family: "Barlow"; font-weight: 400; font-display: swap; src: url("./fonts/barlow-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-weight: 600; font-display: swap; src: url("./fonts/barlow-latin-600-normal.woff2") format("woff2"); }
+
+:root {
+  --bg: oklch(0.135 0.004 70);
+  --line: oklch(0.275 0.005 70);
+  --text: oklch(0.94 0.006 80);
+  --muted: oklch(0.73 0.008 80);
+  --lit: oklch(0.93 0.035 195);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 400 16px/1.6 "Barlow", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+}
+main { max-width: 68ch; margin: 0 auto; padding: 40px 16px 80px; }
+a { color: var(--lit); text-underline-offset: 3px; }
+.back { font-size: 14px; }
+h1 { font-weight: 600; font-size: 28px; line-height: 1.2; margin: 24px 0 4px; }
+.dates { color: var(--muted); font-size: 14px; margin: 0 0 32px; }
+h2 { font-weight: 600; font-size: 18px; margin: 36px 0 8px; padding-top: 20px; border-top: 1px solid var(--line); }
+p, li { color: var(--text); }
+ul { padding-left: 1.2em; }
+li + li { margin-top: 6px; }
+.caps { font-size: 14px; letter-spacing: 0.01em; }
+footer { margin-top: 48px; color: var(--muted); font-size: 14px; }

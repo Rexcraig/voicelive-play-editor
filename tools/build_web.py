@@ -21,6 +21,12 @@ OUT = ROOT / "web/public/vlp"
 UI = ("app.js", "sets.js", "setup.js", "style.css")
 SRC = ("api.js", "boot.js", "midi.js", "rig.js", "storage.js", "tch.js", "spec.json")
 
+# Privacy Policy and Terms (web/pages). Operator: Verona Strategic LLC, Florida, like Will's other apps.
+# They are only published once LEGAL_CONTACT is set; until then the build leaves them and their links out.
+LEGAL_CONTACT = None
+LEGAL_EFFECTIVE = "September 25, 2026"
+LEGAL_LINKS = '<p class="legal"><a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>\n</footer>'
+
 # What the page says before the singer has let the browser reach the pedal.
 CONNECT = """
 <div id="connect" class="notice connect">
@@ -45,6 +51,8 @@ def index_html():
     html = html.replace("<main id=\"blocks\"></main>", CONNECT.strip() + "\n\n<main id=\"blocks\"></main>")
     # Not for search engines: this is the singer's tool, not a public page.
     html = html.replace("<head>", '<head>\n<meta name="robots" content="noindex, nofollow">', 1)
+    if LEGAL_CONTACT:
+        html = html.replace("</footer>", LEGAL_LINKS, 1)
     return html
 
 
@@ -63,6 +71,14 @@ def main():
     for name in SRC:
         shutil.copy2(ROOT / "web/src" / name, OUT / "src" / name)
     shutil.copytree(ROOT / "static/fonts", OUT / "fonts")
+    if LEGAL_CONTACT:
+        shutil.copy2(ROOT / "web/pages/legal.css", OUT / "legal.css")
+        for name in ("privacy.html", "terms.html"):
+            text = (ROOT / "web/pages" / name).read_text()
+            text = text.replace("{{CONTACT}}", LEGAL_CONTACT).replace("{{EFFECTIVE}}", LEGAL_EFFECTIVE)
+            if "{{" in text:
+                sys.exit(f"web/pages/{name} still has an unfilled {{{{...}}}} placeholder.")
+            (OUT / name).write_text(text)
     # Cloudflare serves _headers from the root of the assets folder; keeps the page out of search results.
     (OUT.parent / "_headers").write_text("/vlp/*\n  X-Robots-Tag: noindex, nofollow\n")
     (OUT / "robots.txt").write_text("User-agent: *\nDisallow: /\n")

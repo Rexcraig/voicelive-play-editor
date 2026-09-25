@@ -423,6 +423,7 @@ input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: var(--focu
 
 footer { padding: 0 28px 40px; color: var(--muted); font-size: 13px; max-width: 72ch; }
 footer strong { color: var(--text); font-weight: 600; }
+footer .legal a { color: var(--muted); text-underline-offset: 3px; }
 #hint { min-height: 1.2em; color: var(--lit); }
 
 /* ---------- pedal list ---------- */
