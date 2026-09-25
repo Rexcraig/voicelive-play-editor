@@ -57,6 +57,8 @@ function pedalContents() {
   };
 }
 
+let selectFailed = false;
+
 async function backupSlot(path, slot, preset) {
   return store.backupPreset(path, buildSyx(slot, preset.name, preset.tags, preset.params));
 }
@@ -151,6 +153,14 @@ const ROUTES = {
     const { name, tags, params } = presetOf(body);
     await midi.sendLive(name, tags, params);
     return { ok: true, message: "sent" };
+  },
+  "/api/pedal/select": async (body) => {
+    const slot = Math.trunc(body?.slot ?? 0);
+    if (slot < 1 || slot > CAPACITY) return fail(`The pedal's presets are numbered 1 to ${CAPACITY}.`);
+    if (selectFailed) return { ok: true, switched: false };  // tried once this visit; don't keep poking the pedal
+    const switched = await midi.selectPreset(slot);
+    selectFailed = !switched;
+    return { ok: true, switched };
   },
   "/api/setup": async (body) => {
     if (body === undefined) return { ok: true, values: await midi.readSetup() };

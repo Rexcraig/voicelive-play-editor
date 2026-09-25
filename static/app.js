@@ -366,8 +366,14 @@ function renderPedal() {
     const open = document.createElement("button");
     open.className = "ghost";
     open.textContent = "Open in editor";
-    open.onclick = () => {
-      loadPreset(p, p.slot);
+    open.onclick = async () => {
+      // Switch the pedal itself to this preset, so its screen shows the same number and name. If it doesn't
+      // follow, fall back to playing it in the edit buffer, which keeps the pedal's current number.
+      const res = state.connected ? await api("/api/pedal/select", { slot: p.slot }) : { switched: false };
+      loadPreset(p, p.slot, { play: !res.switched });
+      if (state.connected && !res.switched) {
+        hint(`Playing ${p.name} on the pedal as a preview: the pedal's screen keeps its own preset number until you switch there with the footswitch or Save to pedal.`);
+      }
     };
     const copy = document.createElement("button");
     copy.className = "ghost";
@@ -385,14 +391,14 @@ function renderPedal() {
   }
 }
 
-function loadPreset(p, slot) {
+function loadPreset(p, slot, { play = true } = {}) {
   p.params.forEach((v, i) => (state.values[i] = v));
   state.tags = p.tags;
   state.slot = slot || null;
   $("#preset-name").value = p.name;
   render();
   showTab("editor");
-  push();
+  if (play) push();  // not needed when the pedal has just switched to this very preset
 }
 
 async function openSyx(file) {

@@ -274,3 +274,26 @@ test("/api/export returns bytes identical to tch.buildSyx for the same preset", 
   const want = buildSyx(right.number, right.name, right.tags, right.params);
   assert.deepEqual(Buffer.from(bytes), Buffer.from(want));
 });
+
+// --- /api/pedal/select (kept last: a pedal that ignores Program Change is remembered for the visit) ----
+
+test("/api/pedal/select switches the pedal with bank select + program change and confirms it", async () => {
+  pedal.programChange = "cc0";
+  assert.deepEqual(await api.transport("/api/pedal/select", { slot: 246 }), { ok: true, switched: true });
+  assert.equal(pedal.setup[25], 246);
+  assert.equal(pedal.writes, 0, "selecting must never write a preset");
+});
+
+test("/api/pedal/select finds the other bank-select scheme", async () => {
+  pedal.programChange = "cc32";
+  assert.deepEqual(await api.transport("/api/pedal/select", { slot: 130 }), { ok: true, switched: true });
+  assert.equal(pedal.setup[25], 130);
+});
+
+test("/api/pedal/select reports switched:false when the pedal ignores it, then stops trying", async () => {
+  pedal.programChange = null;
+  assert.deepEqual(await api.transport("/api/pedal/select", { slot: 5 }), { ok: true, switched: false });
+  const sent = pedal.log.length;
+  assert.deepEqual(await api.transport("/api/pedal/select", { slot: 6 }), { ok: true, switched: false });
+  assert.equal(pedal.log.length, sent, "a second attempt in the same visit sends nothing");
+});

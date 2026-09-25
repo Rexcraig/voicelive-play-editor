@@ -56,6 +56,14 @@ export class FakePedal {
     this.log.push(msg);
     if (this.silentAfterWrites !== null && this.writes >= this.silentAfterWrites) return;
     if (eq(msg, IDENTITY_REQUEST)) return this.reply(IDENTITY_REPLY);
+    // Bank Select + Program Change (channel 1). `programChange` = which bank controller this fake obeys,
+    // "cc0", "cc32" or null (ignores program changes entirely). Setup [25] tracks the current preset.
+    if (msg[0] === 0xB0) { this.bank = { ...(this.bank || {}), [msg[1]]: msg[2] }; return; }
+    if (msg[0] === 0xC0) {
+      const cc = { cc0: 0x00, cc32: 0x20 }[this.programChange];
+      if (cc !== undefined) this.setup[25] = ((this.bank || {})[cc] || 0) * 128 + msg[1] + 1;
+      return;
+    }
     if (!headMatch(msg)) return;
     const cmd = msg[6];
 

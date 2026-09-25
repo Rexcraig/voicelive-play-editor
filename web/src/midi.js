@@ -152,6 +152,26 @@ export async function sendLive(name, tags, params) {
   return run(async () => { sendSyx(buildSyx(0, pedalName(name, "EDITOR"), tags, params)); return true; });
 }
 
+// Setup value that holds the preset the pedal is on (Setup map: [25] read 246 while the pedal sat on 246).
+export const CURRENT_PRESET = 25;
+
+// Ask the pedal to switch to a stored preset with standard MIDI Bank Select + Program Change on channel 1, then
+// confirm from the Setup block that it moved. Only selects; never writes. Two bank-select schemes are tried,
+// because which one the Play uses isn't documented. Returns true only when the pedal is seen on `slot`.
+export async function selectPreset(slot) {
+  const n = slot - 1;
+  for (const bank of [[0xB0, 0x00, n >> 7], [0xB0, 0x20, n >> 7]]) {
+    const on = await run(async (link) => {
+      send(bank);
+      send([0xC0, n & 0x7F]);
+      await sleep(250);
+      return setupValues(await setupPackets(link))[CURRENT_PRESET];
+    }, { session: false });
+    if (on === slot) return true;
+  }
+  return false;
+}
+
 async function setupPackets(link) {
   link.drain();
   send([...HEAD, 0x15, 0x00, 0xF7]);
