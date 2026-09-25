@@ -2,7 +2,7 @@
 import unittest
 
 from helpers import FIXTURES, fixture_presets
-from tch import build_syx, checksum, decode28, encode28, parse_syx, pedal_name
+from tch import build_record, build_syx, checksum, decode28, encode28, parse_syx, pedal_name
 
 
 class Codec(unittest.TestCase):
@@ -48,6 +48,19 @@ class Codec(unittest.TestCase):
         self.assertEqual(pedal_name("sixteen chars xx"), "SIXTEEN CHARS X")
         self.assertEqual(pedal_name("((()))"), "UNTITLED")
         self.assertEqual(pedal_name(" LEAD"), " LEAD")
+
+    def test_voicesupport_pack_records_are_read_with_tags(self):
+        a, b = list(range(-25, 25)), [0] * 50
+        pack = b"PACK HEADER" + build_record(1, "FIRST", 4099, a) + build_record(2, "SECOND", 12, b)
+        got = parse_syx(pack)
+        self.assertEqual([(p["number"], p["name"], p["tags"], p["params"]) for p in got],
+                         [(1, "FIRST", 4099, a), (2, "SECOND", 12, b)])
+
+    def test_damaged_pack_is_rejected(self):
+        rec = bytearray(build_record(1, "FIRST", 0, [0] * 50))
+        rec[-2] ^= 1  # second packet's checksum
+        with self.assertRaises(ValueError):
+            parse_syx(bytes(rec))
 
     def test_checksum_is_7bit_sum(self):
         self.assertEqual(checksum(bytes([0x7F, 0x7F, 0x02])), (0x7F + 0x7F + 0x02) & 0x7F)

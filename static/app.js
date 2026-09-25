@@ -316,18 +316,53 @@ function ago(ms) {
   return `${d} day${d === 1 ? "" : "s"} ago`;
 }
 
+const genresOf = (tags) => (state.spec.genres || []).filter((_, bit) => (tags >> bit) & 1);
+
+function renderGenreFilter() {
+  const box = $("#genre-filter");
+  const counts = new Map();
+  for (const p of state.pedal.presets) for (const g of genresOf(p.tags || 0)) counts.set(g, (counts.get(g) || 0) + 1);
+  if (state.genre && !counts.has(state.genre)) state.genre = null;
+  box.hidden = !counts.size;
+  box.innerHTML = "";
+  for (const g of [null, ...state.spec.genres.filter((x) => counts.has(x))]) {
+    const b = document.createElement("button");
+    b.className = "genre" + (state.genre === g ? " on" : "");
+    b.setAttribute("aria-pressed", state.genre === g);
+    b.textContent = g ? `${g} ${counts.get(g)}` : `All ${state.pedal.presets.length}`;
+    b.onclick = () => { state.genre = g; renderPedal(); };
+    box.append(b);
+  }
+}
+
 function renderPedal() {
+  renderGenreFilter();
   const q = $("#pedal-search").value.trim().toUpperCase();
   const list = $("#pedal-list");
   list.innerHTML = "";
-  for (const p of state.pedal.presets) {
-    if (q && !p.name.includes(q) && String(p.slot) !== q) continue;
+  const shown = state.pedal.presets.filter((p) => (!q || p.name.includes(q) || String(p.slot) === q)
+    && (!state.genre || genresOf(p.tags || 0).includes(state.genre)));
+  const note = $("#pedal-filtered");
+  const what = [state.genre, q && `"${$("#pedal-search").value.trim()}"`].filter(Boolean).join(" and ");
+  note.hidden = !what;
+  if (what) {
+    note.textContent = `Showing ${shown.length} of ${state.pedal.presets.length}, matching ${what}. `;
+    const clear = document.createElement("button");
+    clear.className = "link";
+    clear.textContent = "Show all";
+    clear.onclick = () => { $("#pedal-search").value = ""; state.genre = null; renderPedal(); };
+    note.append(clear);
+  }
+  for (const p of shown) {
     const li = document.createElement("li");
     const chips = BLOCK_STATES.filter(([slot]) => p.params[slot])
       .map(([slot, label, block]) => `<span class="chip${p.params[slot] === 2 ? " hit" : ""}" data-block="${block}">${label}${p.params[slot] === 2 ? " · HIT" : ""}</span>`).join("");
     const edited = p.saved ? `<span class="chip edited" title="Saved from this editor after the list was last read">saved here</span>` : "";
-    li.innerHTML = `<span class="slot">${p.slot}</span><span class="pname"></span><span class="chips">${chips}${edited}</span>`;
-    li.querySelector(".pname").textContent = p.name;
+    li.innerHTML = `<span class="slot">${p.slot}</span><span class="pname"><span class="pn"></span><span class="genres"></span></span><span class="chips">${chips}${edited}</span>`;
+    const genres = genresOf(p.tags || 0);
+    li.querySelector(".pn").textContent = p.name;
+    li.querySelector(".genres").textContent = genres.filter((g) => g !== "Favorite").join(" · ");
+    if (genres.includes("Favorite")) li.querySelector(".pn").insertAdjacentHTML("beforeend", ` <span class="fav" title="Favorite (FAV on the pedal)">FAV</span>`);
     const open = document.createElement("button");
     open.className = "ghost";
     open.textContent = "Open in editor";
@@ -372,19 +407,51 @@ async function openSyx(file) {
     return hint(`Imported ${data.presets[0].name} from ${file.name}.`);
   }
   $("#pick-title").textContent = `${file.name} has ${data.presets.length} presets`;
+  pick.presets = data.presets;
+  pick.file = file.name;
+  pick.genre = null;
+  $("#pick-search").value = "";
+  renderPick();
+  $("#pick-dialog").showModal();
+}
+
+const pick = { presets: [], file: "", genre: null };
+
+function renderPick() {
+  const q = $("#pick-search").value.trim().toUpperCase();
+  const counts = new Map();
+  for (const p of pick.presets) for (const g of genresOf(p.tags || 0)) counts.set(g, (counts.get(g) || 0) + 1);
+  const box = $("#pick-genres");
+  box.hidden = !counts.size;
+  box.innerHTML = "";
+  for (const g of [null, ...state.spec.genres.filter((x) => counts.has(x))]) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "genre" + (pick.genre === g ? " on" : "");
+    b.setAttribute("aria-pressed", pick.genre === g);
+    b.textContent = g ? `${g} ${counts.get(g)}` : `All ${pick.presets.length}`;
+    b.onclick = () => { pick.genre = g; renderPick(); };
+    box.append(b);
+  }
   const list = $("#pick-list");
   list.innerHTML = "";
-  data.presets.forEach((p) => {
+  for (const p of pick.presets) {
+    const genres = genresOf(p.tags || 0);
+    if (q && !p.name.toUpperCase().includes(q)) continue;
+    if (pick.genre && !genres.includes(pick.genre)) continue;
     const li = document.createElement("li");
     const b = document.createElement("button");
     b.value = "cancel";
-    b.textContent = p.name;
-    b.onclick = () => { loadPreset(p); hint(`Imported ${p.name} from ${file.name}.`); };
+    b.innerHTML = `<span class="pn"></span><span class="genres"></span>`;
+    b.querySelector(".pn").textContent = p.name;
+    b.querySelector(".genres").textContent = genres.filter((g) => g !== "Favorite").join(" · ");
+    b.onclick = () => { loadPreset(p); hint(`Imported ${p.name} from ${pick.file}.`); };
     li.append(b);
     list.append(li);
-  });
-  $("#pick-dialog").showModal();
+  }
+  if (!list.children.length) list.innerHTML = `<li class="none">No presets match.</li>`;
 }
+$("#pick-search").oninput = renderPick;
 
 $("#open").onclick = () => { $("#files-menu").open = false; $("#open-file").click(); };
 document.addEventListener("click", (e) => { if (!$("#files-menu").contains(e.target)) $("#files-menu").open = false; });
@@ -479,23 +546,48 @@ $("#save-confirm").onclick = async (e) => {
 document.querySelectorAll(".tabs button").forEach((b) => (b.onclick = () => showTab(b.dataset.tab)));
 $("#pedal-search").oninput = renderPedal;
 $("#sync-refresh").onclick = readPedal;
-$("#export").onclick = () => {
+const exportBytes = (payload) => globalThis.vlpTransport
+  ? globalThis.vlpTransport("/api/export", payload).then((bytes) => new Blob([bytes]))
+  : fetch("/api/export", { method: "POST", body: JSON.stringify(payload) }).then((r) => r.blob());
+
+function download(blob, filename) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+}
+
+$("#export").onclick = async () => {
   $("#files-menu").open = false;
-  const form = document.createElement("form");
-  form.method = "POST";
-  form.action = "/api/export";
-  document.body.append(form);
   const payload = { name: $("#preset-name").value, values: state.values, tags: state.tags, slot: state.slot || 0 };
-  (globalThis.vlpTransport
-    ? globalThis.vlpTransport("/api/export", payload).then((bytes) => new Blob([bytes]))
-    : fetch("/api/export", { method: "POST", body: JSON.stringify(payload) }).then((r) => r.blob())
-  ).then((blob) => {
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = ($("#preset-name").value || "preset").replace(/\s+/g, " ").trim() + ".syx";
-    a.click();
-  });
-  form.remove();
+  download(await exportBytes(payload), ($("#preset-name").value || "preset").replace(/\s+/g, " ").trim() + ".syx");
+};
+
+// Every preset on the pedal in one .syx, each under its own slot number, read fresh first. Opening the file with
+// Files > Import presets lists them all; Save to pedal puts any one back.
+$("#snapshot").onclick = async () => {
+  const say = (text) => { $("#sync-detail").textContent = text; };
+  const btn = $("#snapshot");
+  if (!state.connected) return say("Connect the pedal first: a snapshot is read fresh from the pedal.");
+  btn.disabled = true;
+  btn.textContent = "Reading the pedal…";
+  try {
+    await readPedal();
+    if (!state.pedal.synced || Date.now() - state.pedal.synced > 60e3) return say("The pedal couldn't be read, so no snapshot was saved.");
+    btn.textContent = "Saving…";
+    const parts = [];
+    for (const p of state.pedal.presets) {
+      parts.push(await exportBytes({ name: p.name, values: Object.fromEntries(p.params.map((v, i) => [i, v])), tags: p.tags, slot: p.slot }));
+    }
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    download(new Blob(parts), `VoiceLive Play snapshot ${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}${pad(d.getMinutes())}.syx`);
+    say(`Downloaded a snapshot of all ${parts.length} presets on the pedal. To bring one back: Files › Import presets, pick it, then Save to pedal.`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save snapshot";
+  }
 };
 
 boot();

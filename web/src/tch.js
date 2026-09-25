@@ -149,6 +149,37 @@ export function parseSyx(data) {
       }
     }
   }
+  if (presets.length === 0) presets.push(...parseTch(data));
   if (presets.length === 0) throw new Error("No VoiceLive Play presets found in this file.");
+  return presets;
+}
+
+// A preset packet starting at i: SYX_HEADER, 0x21, index, 100 data bytes, checksum, F7.
+function packetAt(data, i, index) {
+  if (i + 110 > data.length || data[i + 6] !== 0x21 || data[i + 7] !== index || data[i + 109] !== 0xf7) return null;
+  for (let k = 0; k < 6; k++) if (data[i + k] !== SYX_HEADER[k]) return null;
+  return { body: data.slice(i + 8, i + 108), check: data[i + 108] };
+}
+
+/** Presets in a VoiceSupport .tch pack: [{number, name, tags, params}]. Mirrors tch.parse_tch. */
+export function parseTch(data) {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const u32 = (i) => view.getUint32(i, true);
+  const presets = [];
+  for (let s = 43; s + 110 <= data.length; s++) {
+    const p0 = packetAt(data, s, 0);
+    if (!p0 || u32(s - 39) !== 170 || u32(s - 35) !== 15 || u32(s - 4) !== 110) continue;
+    const p1 = packetAt(data, s + 114, 1);
+    if (!p1) continue;
+    const number = u32(s - 43);
+    if (checksum(p0.body) !== p0.check || checksum(p1.body) !== p1.check) {
+      throw new Error(`Preset ${number} in this pack is damaged (checksum mismatch).`);
+    }
+    const d = concatBytes(p0.body, p1.body);
+    const params = [];
+    for (let k = 0; k < 200; k += 4) params.push(decode28(d.slice(k, k + 4)));
+    presets.push({ number, name: decodeAsciiReplace(rstripZero(data.slice(s - 31, s - 16))), tags: u32(s - 16), params });
+    s += 223;
+  }
   return presets;
 }

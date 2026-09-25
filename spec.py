@@ -5,7 +5,7 @@ Decoded from 877 official TC-Helicon presets and confirmed on the unit where mar
 """
 
 # The editor's version. Bump it for every package handed to anyone, then tag git (vX.Y) and name the zip to match.
-VERSION = "0.5"
+VERSION = "0.6"
 
 OFF, ON, HIT = 0, 1, 2
 
@@ -139,6 +139,13 @@ BLOCKS = [
 # unit with Will 2026-09-17 (tools/setup_map.md). kind: choice | onoff | percent | step (range not measured: +/-1 buttons,
 # the pedal keeps what it accepts) | hz2 (value = Hz x 2) | locut (index 0..112, Hz = 20 * 2^(index/24)).
 ON_OFF = ["Off", "On"]
+
+# Preset tags: bit n of the 28-bit tag field = GENRES[n], in the order of the pedal's own GENRE screen
+# (read off the singer's Play 2026-09-25, "All" left out). Bit 0 is Favorite ("FAV" on the pedal's screen).
+# Checked against presets: MEGAPHONE = Showcase + Megaphone, GORGEOUS HALL = Showcase + Reverb,
+# PONG DELAY = Showcase + Echo, CYBORG = Showcase + HardTune + Extreme.
+GENRES = ["Favorite", "Showcase", "Songs & Artists", "Pop", "Rock", "Alternative", "Country", "Hip Hop/Rap",
+          "Dance", "Echo", "Doubling", "Reverb", "Harmony", "HardTune", "Megaphone", "Extreme", "Character"]
 SWITCH3_FUNCTIONS = ["Loop Rec/Play", "Loop Stop/Clear", "Loop Undo", "Loop Start/Stop", "1 Button Looper", "Tap Tempo",
                      "Harmony", "Delay", "uMod", "Transducer", "HardTune", "Doubling", "Reverb"]
 MP76_FUNCTIONS = ["Preset Down", "Preset Up", "HIT", "HIT + Talk", "HIT + Tap", "Loop", "Loop Stop/Clear", "Loop Undo",
@@ -415,6 +422,7 @@ def setup_value_ok(index, value):
 def as_json():
     return {
         "version": VERSION,
+        "genres": GENRES,
         "rig": RIG_QUESTIONS,
         "setup": [{"id": i, "title": t, "help": h,
                    "fields": [{"index": x, "label": l, "kind": k, "help": SETUP_HELP.get(x, ""), "note": SETUP_NOTES.get(x),

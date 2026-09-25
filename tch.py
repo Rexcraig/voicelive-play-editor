@@ -123,5 +123,30 @@ def parse_syx(data):
                                 "params": [decode28(d[k:k + 4]) for k in range(0, 200, 4)], "syx": cur["syx"]})
                 cur = None
     if not presets:
+        presets = parse_tch(data)
+    if not presets:
         raise ValueError("No VoiceLive Play presets found in this file.")
+    return presets
+
+
+def parse_tch(data):
+    """Presets in a VoiceSupport .tch pack (the format build_record writes): [{number, name, tags, params}].
+    Only records whose fixed fields check out are taken; checked 2026-09-25 against all 71 TC packs."""
+    data = bytes(data)
+    presets = []
+    for m in PACKET.finditer(data):
+        s = m.start()
+        if m.group(1) != b"\x00" or s < 43:
+            continue
+        number, version, name_len = struct.unpack("<III", data[s - 43:s - 31])
+        tags, _, _, length = struct.unpack("<IIII", data[s - 16:s])
+        after = data[m.end():m.end() + 4 + 110]
+        second = PACKET.match(after, 4)
+        if version != 170 or name_len != 15 or length != 110 or not second or second.group(1) != b"\x01":
+            continue
+        if checksum(m.group(2)) != m.group(3)[0] or checksum(second.group(2)) != second.group(3)[0]:
+            raise ValueError(f"Preset {number} in this pack is damaged (checksum mismatch).")
+        d = m.group(2) + second.group(2)
+        presets.append({"number": number, "name": data[s - 31:s - 16].rstrip(b"\x00").decode("ascii", "replace"),
+                        "tags": tags, "params": [decode28(d[k:k + 4]) for k in range(0, 200, 4)]})
     return presets

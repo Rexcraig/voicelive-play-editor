@@ -88,6 +88,25 @@
     0,
     0
   ],
+  "genres": [
+    "Favorite",
+    "Showcase",
+    "Songs & Artists",
+    "Pop",
+    "Rock",
+    "Alternative",
+    "Country",
+    "Hip Hop/Rap",
+    "Dance",
+    "Echo",
+    "Doubling",
+    "Reverb",
+    "Harmony",
+    "HardTune",
+    "Megaphone",
+    "Extreme",
+    "Character"
+  ],
   "name_chars": " !$%&'+-./0123456789=?ABCDEFGHIJKLMNOPQRSTUVWXYZ",
   "name_length": 15,
   "params": [
@@ -1439,5 +1458,5 @@
     }
   ],
   "tags": 12,
-  "version": "0.5"
+  "version": "0.6"
 }

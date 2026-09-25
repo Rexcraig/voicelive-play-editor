@@ -68,3 +68,12 @@ for (const file of readdirSync(FIXTURES_DIR)) {
     }
   });
 }
+
+test("parseSyx: reads VoiceSupport .tch pack records with their tags", () => {
+  const pack = new Uint8Array(JSON.parse(readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "pack-fixture.json"), "utf8")));
+  const got = parseSyx(pack).map((p) => [p.number, p.name, p.tags, p.params]);
+  assert.deepEqual(got, [
+    [1, "FIRST", 4099, Array.from({ length: 50 }, (_, i) => i - 25)],
+    [2, "SECOND", 12, Array(50).fill(0)],
+  ]);
+});

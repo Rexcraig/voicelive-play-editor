@@ -33,7 +33,7 @@
         <button id="export">Export preset</button>
       </div>
     </details>
-    <input type="file" id="open-file" accept=".syx" hidden>
+    <input type="file" id="open-file" accept=".syx,.tch" hidden>
     <button class="primary" id="save">Save to pedal</button>
   </div>
 </header>
@@ -54,12 +54,17 @@
       <strong id="sync-title"></strong>
       <p id="sync-detail"></p>
     </div>
-    <button class="ghost" id="sync-refresh">Read pedal</button>
+    <div class="sync-actions">
+      <button class="ghost" id="sync-refresh">Read pedal</button>
+      <button class="ghost" id="snapshot" title="Download every preset on the pedal as one file, to keep or restore from later">Save snapshot</button>
+    </div>
   </div>
   <div class="pedal-head">
     <p id="pedal-source"></p>
-    <input id="pedal-search" type="search" placeholder="Search name or slot" spellcheck="false">
+    <input id="pedal-search" type="search" placeholder="Search name or slot" spellcheck="false" autocomplete="off">
   </div>
+  <div id="genre-filter" role="group" aria-label="Filter by genre"></div>
+  <p id="pedal-filtered" hidden></p>
   <ol id="pedal-list"></ol>
 </section>
 
@@ -112,6 +117,8 @@
   <form method="dialog">
     <h2 id="pick-title"></h2>
     <p>Choose a preset to open in the editor.</p>
+    <input id="pick-search" type="search" placeholder="Search name" spellcheck="false" autocomplete="off">
+    <div id="pick-genres" role="group" aria-label="Filter by genre"></div>
     <ol id="pick-list"></ol>
     <div class="actions"><button value="cancel">Cancel</button></div>
   </form>
@@ -120,7 +127,7 @@
   <form method="dialog">
     <h2 id="picker-title">Add presets</h2>
     <div class="picker-bar">
-      <input id="picker-search" type="search" placeholder="Search name or slot" spellcheck="false">
+      <input id="picker-search" type="search" placeholder="Search name or slot" spellcheck="false" autocomplete="off">
       <button type="button" class="ghost" id="picker-import">Import from file</button>
       <input type="file" id="picker-file" accept=".syx" hidden>
     </div>

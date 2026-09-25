@@ -35,9 +35,5 @@ npx --yes wrangler deploy
 
 cat <<'NOTE'
 
-Deployed. Two things still needed before the page answers:
-1. In the Cloudflare dashboard, add to the occhiphoto.com Redirect Rule:
-     and not starts_with(http.request.uri.path, "/vlp")
-   Until then /vlp/ still 301s to walkingdunesproductions.com.
-2. Check it: curl -sI https://occhiphoto.com/vlp/   ->  200, text/html
+Deployed to https://occhiphoto.com/vlp/ (behind Cloudflare Access: a plain curl gets a 302 to the Access login).
 NOTE
