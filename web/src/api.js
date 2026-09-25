@@ -155,8 +155,8 @@ const ROUTES = {
     return { ok: true, message: "sent" };
   },
   "/api/pedal/select": async (body) => {
-    const slot = Math.trunc(body?.slot ?? 0);
-    if (slot < 1 || slot > CAPACITY) return fail(`The pedal's presets are numbered 1 to ${CAPACITY}.`);
+    const slot = Number(body?.slot);
+    if (!Number.isInteger(slot) || slot < 1 || slot > CAPACITY) return fail(`The pedal's presets are numbered 1 to ${CAPACITY}.`);
     if (selectFailed) return { ok: true, switched: false };  // tried once this visit; don't keep poking the pedal
     const switched = await midi.selectPreset(slot);
     selectFailed = !switched;
@@ -245,9 +245,11 @@ async function readOneSlot(slot) {
 async function community(path, body) {
   const url = "./api/community/" + path.slice("/api/community/".length);
   try {
-    const res = await fetch(url, body === undefined ? { credentials: "same-origin" }
-      : { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    if (res.status === 401 || res.redirected) return fail("Your sign-in has expired. Reload the page to sign in again.");
+    // An expired Access session answers with a redirect to the sign-in page on another domain; following it would
+    // fail as a network error, so don't follow it and say what actually happened.
+    const res = await fetch(url, body === undefined ? { credentials: "same-origin", redirect: "manual" }
+      : { method: "POST", credentials: "same-origin", redirect: "manual", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.type === "opaqueredirect" || res.status === 401) return fail("Your sign-in has expired. Reload the page to sign in again.");
     return await res.json();
   } catch {
     return fail("Can't reach Community right now. Check your internet connection and try again.");

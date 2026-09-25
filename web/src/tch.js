@@ -178,7 +178,7 @@ export function parseTch(data) {
     const d = concatBytes(p0.body, p1.body);
     const params = [];
     for (let k = 0; k < 200; k += 4) params.push(decode28(d.slice(k, k + 4)));
-    presets.push({ number, name: decodeAsciiReplace(rstripZero(data.slice(s - 31, s - 16))), tags: u32(s - 16), params });
+    presets.push({ number, name: decodeAsciiReplace(rstripZero(data.slice(s - 31, s - 16))), tags: u32(s - 16), params, pack: true });
     s += 223;
   }
   return presets;

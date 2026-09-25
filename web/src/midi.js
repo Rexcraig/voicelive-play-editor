@@ -157,19 +157,26 @@ export const CURRENT_PRESET = 25;
 
 // Ask the pedal to switch to a stored preset with standard MIDI Bank Select + Program Change on channel 1, then
 // confirm from the Setup block that it moved. Only selects; never writes. Two bank-select schemes are tried,
-// because which one the Play uses isn't documented. Returns true only when the pedal is seen on `slot`.
+// because which one the Play uses isn't documented. Returns true only when the pedal is seen on `slot`. If it
+// ends up anywhere else (for example it obeyed Program Change but not the bank), it is sent back where it was.
 export async function selectPreset(slot) {
-  const n = slot - 1;
-  for (const bank of [[0xB0, 0x00, n >> 7], [0xB0, 0x20, n >> 7]]) {
-    const on = await run(async (link) => {
-      send(bank);
-      send([0xC0, n & 0x7F]);
+  return run(async (link) => {
+    const current = async () => setupValues(await setupPackets(link))[CURRENT_PRESET];
+    const go = async (n, bank) => {
+      send([0xB0, bank, (n - 1) >> 7]);
+      send([0xC0, (n - 1) & 0x7F]);
       await sleep(250);
-      return setupValues(await setupPackets(link))[CURRENT_PRESET];
-    }, { session: false });
-    if (on === slot) return true;
-  }
-  return false;
+      return current();
+    };
+    const start = await current();
+    for (const bank of [0x00, 0x20]) {
+      if (await go(slot, bank) === slot) return true;
+    }
+    if (start >= 1 && start <= CAPACITY && await current() !== start) {
+      for (const bank of [0x00, 0x20]) if (await go(start, bank) === start) break;
+    }
+    return false;
+  }, { session: false });
 }
 
 async function setupPackets(link) {

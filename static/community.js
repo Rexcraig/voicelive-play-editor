@@ -118,6 +118,12 @@ function communityRow(p) {
   }
   if (community.me.admin) {
     button(p.hidden ? "Unhide" : "Hide", () => communityAction("/api/community/hide", { id: p.id, hidden: !p.hidden }));
+    if (!p.mine) {
+      button("Stop sharer", async () => {
+        if (!confirm(`Stop ${p.author} from sharing, and hide everything they've shared?`)) return;
+        await communityAction("/api/community/ban", { id: p.id });
+      }, "link");
+    }
   } else if (!p.mine) {
     button("Report", async () => {
       const reason = prompt(`What's wrong with ${p.name}? (For example: offensive, not theirs to share, broken.)`);

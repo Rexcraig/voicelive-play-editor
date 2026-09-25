@@ -62,6 +62,7 @@ export class FakePedal {
     if (msg[0] === 0xC0) {
       const cc = { cc0: 0x00, cc32: 0x20 }[this.programChange];
       if (cc !== undefined) this.setup[25] = ((this.bank || {})[cc] || 0) * 128 + msg[1] + 1;
+      if (this.programChange === "pconly") this.setup[25] = msg[1] + 1;  // obeys Program Change, ignores banks
       return;
     }
     if (!headMatch(msg)) return;

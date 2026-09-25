@@ -131,7 +131,7 @@ def parse_syx(data):
 
 def parse_tch(data):
     """Presets in a VoiceSupport .tch pack (the format build_record writes): [{number, name, tags, params}].
-    Only records whose fixed fields check out are taken; checked 2026-09-25 against all 71 TC packs."""
+    Only records whose fixed fields check out are taken; checked 2026-09-25 against all 35 TC .tch packs."""
     data = bytes(data)
     presets = []
     for m in PACKET.finditer(data):
@@ -148,5 +148,6 @@ def parse_tch(data):
             raise ValueError(f"Preset {number} in this pack is damaged (checksum mismatch).")
         d = m.group(2) + second.group(2)
         presets.append({"number": number, "name": data[s - 31:s - 16].rstrip(b"\x00").decode("ascii", "replace"),
-                        "tags": tags, "params": [decode28(d[k:k + 4]) for k in range(0, 200, 4)]})
+                        "tags": tags, "params": [decode28(d[k:k + 4]) for k in range(0, 200, 4)],
+                        "pack": True})  # number = position in the pack, not a slot on anyone's pedal
     return presets

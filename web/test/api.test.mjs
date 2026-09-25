@@ -290,6 +290,20 @@ test("/api/pedal/select finds the other bank-select scheme", async () => {
   assert.equal(pedal.setup[25], 130);
 });
 
+test("/api/pedal/select puts the pedal back where it was when it lands on the wrong preset", async () => {
+  pedal.programChange = "pconly";  // obeys Program Change but not Bank Select: 300 would land on 44
+  pedal.setup[25] = 12;
+  assert.deepEqual(await api.transport("/api/pedal/select", { slot: 300 }), { ok: true, switched: false });
+  assert.equal(pedal.setup[25], 12, "the pedal must end up on the preset it started on");
+});
+
+test("/api/pedal/select refuses a slot that isn't a whole number in range", async () => {
+  for (const slot of [NaN, "x", 0, 501, 2.5]) {
+    const res = await api.transport("/api/pedal/select", { slot });
+    assert.equal(res.ok, false, `slot ${slot}`);
+  }
+});
+
 test("/api/pedal/select reports switched:false when the pedal ignores it, then stops trying", async () => {
   pedal.programChange = null;
   assert.deepEqual(await api.transport("/api/pedal/select", { slot: 5 }), { ok: true, switched: false });

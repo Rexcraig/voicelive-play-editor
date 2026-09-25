@@ -25,3 +25,16 @@ CREATE TABLE IF NOT EXISTS reports (
   created_at     INTEGER NOT NULL,
   PRIMARY KEY (preset_id, reporter_email)  -- one report per person per preset
 );
+
+-- Every share, kept when presets are deleted, so the daily limit can't be reset by deleting.
+CREATE TABLE IF NOT EXISTS share_log (
+  email      TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS share_log_email ON share_log (email, created_at);
+
+-- People a moderator has stopped from sharing.
+CREATE TABLE IF NOT EXISTS banned (
+  email      TEXT PRIMARY KEY,
+  created_at INTEGER NOT NULL
+);

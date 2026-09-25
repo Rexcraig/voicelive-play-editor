@@ -23,10 +23,14 @@ export default {
     if (!url.pathname.startsWith(API)) return env.ASSETS.fetch(request);
     if (!env.DB) return json({ ok: false, enabled: false, message: "Community isn't switched on yet." }, 503);
     try {
-      const email = await identify(request, env);
+      if (request.method === "POST" && !sameOriginJson(request, url)) {
+        return json({ ok: false, message: "Refused: requests must come from the editor itself." }, 403);
+      }
+      const email = await identify(request, env, url);
       if (!email) return json({ ok: false, message: "Sign in again: your session has expired." }, 401);
       const route = url.pathname.slice(API.length);
-      const body = request.method === "POST" ? await request.json().catch(() => ({})) : {};
+      let body = request.method === "POST" ? await request.json().catch(() => null) : null;
+      if (!body || typeof body !== "object" || Array.isArray(body)) body = {};
       const handler = ROUTES[`${request.method} ${route}`];
       if (!handler) return json({ ok: false, message: "Not found." }, 404);
       return json(await handler({ env, email, admin: isAdmin(env, email), body, url }));
@@ -44,6 +48,7 @@ const ROUTES = {
   "POST delete": remove,
   "POST report": report,
   "POST hide": hide,
+  "POST ban": ban,
 };
 
 // --- routes --------------------------------------------------------------------------------------------------
@@ -77,6 +82,8 @@ async function share({ env, email, body }) {
   if (!name) return fail("Give the preset a name first.");
   if (author.length < 2) return fail("Add the name to show with your preset (at least 2 characters).");
   if (!body.rights) return fail("Tick the box to confirm you made this preset or have the right to share it.");
+  const banned = await env.DB.prepare("SELECT 1 FROM banned WHERE email = ?").bind(email).first();
+  if (banned) return fail("Sharing has been turned off for your account. If you think that's a mistake, contact us.");
   const problem = checkParams(params);
   if (problem) return fail(problem);
 
@@ -84,17 +91,24 @@ async function share({ env, email, body }) {
   if (TC_PRESETS.has(fingerprint)) {
     return fail("This is one of TC-Helicon's own presets, so it can't be shared here: it already comes in their preset packs. Change it to make it your own, then share that.");
   }
-  const dup = await env.DB.prepare("SELECT name FROM presets WHERE fingerprint = ? AND hidden = 0 LIMIT 1").bind(fingerprint).first();
+  const dup = await env.DB.prepare("SELECT name, hidden FROM presets WHERE fingerprint = ? LIMIT 1").bind(fingerprint).first();
+  if (dup?.hidden) return fail("This preset was removed from Community by a moderator, so it can't be shared again.");
   if (dup) return fail(`Exactly this preset is already in Community, as ${dup.name}.`);
-  const today = await env.DB.prepare("SELECT COUNT(*) AS n FROM presets WHERE author_email = ? AND created_at > ?")
+  // Counted from a log that deleting presets doesn't touch, so delete-and-reshare can't get round the limit.
+  const today = await env.DB.prepare("SELECT COUNT(*) AS n FROM share_log WHERE email = ? AND created_at > ?")
     .bind(email, Date.now() - 24 * 3600e3).first();
   if (today.n >= SHARES_PER_DAY) return fail(`You've shared ${SHARES_PER_DAY} presets today. Try again tomorrow.`);
 
   const id = randomId();
-  await env.DB.prepare(
-    `INSERT INTO presets (id, name, tags, params, fingerprint, description, author_name, author_email, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-  ).bind(id, name, tags, JSON.stringify(params), fingerprint, description, author, email, Date.now()).run();
+  const now = Date.now();
+  await env.DB.batch([
+    env.DB.prepare(
+      `INSERT INTO presets (id, name, tags, params, fingerprint, description, author_name, author_email, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(id, name, tags, JSON.stringify(params), fingerprint, description, author, email, now),
+    env.DB.prepare("INSERT INTO share_log (email, created_at) VALUES (?, ?)").bind(email, now),
+    env.DB.prepare("DELETE FROM share_log WHERE created_at < ?").bind(now - 2 * 24 * 3600e3),  // only needed for a day
+  ]);
   return { ok: true, id, message: `Shared ${name} with the community.` };
 }
 
@@ -122,6 +136,19 @@ async function hide({ env, admin, body }) {
   const hidden = body.hidden ? 1 : 0;
   await env.DB.prepare("UPDATE presets SET hidden = ? WHERE id = ?").bind(hidden, String(body.id)).run();
   return { ok: true, message: hidden ? "Hidden from Community." : "Visible in Community again." };
+}
+
+// Stop the author of a preset from sharing again, and hide everything they shared. Moderators only.
+async function ban({ env, admin, email, body }) {
+  if (!admin) return fail("Only moderators can stop someone sharing.");
+  const row = await env.DB.prepare("SELECT author_email, author_name FROM presets WHERE id = ?").bind(String(body.id)).first();
+  if (!row) return fail("That preset isn't in Community any more.");
+  if (row.author_email === email) return fail("That's your own preset.");
+  await env.DB.batch([
+    env.DB.prepare("INSERT OR IGNORE INTO banned (email, created_at) VALUES (?, ?)").bind(row.author_email, Date.now()),
+    env.DB.prepare("UPDATE presets SET hidden = 1 WHERE author_email = ?").bind(row.author_email),
+  ]);
+  return { ok: true, message: `${row.author_name} can no longer share, and their presets are hidden.` };
 }
 
 // --- validation ----------------------------------------------------------------------------------------------
@@ -153,17 +180,32 @@ function checkParams(params) {
 
 // --- identity ------------------------------------------------------------------------------------------------
 
-async function identify(request, env) {
-  if (env.DEV_EMAIL) return env.DEV_EMAIL;  // `wrangler dev` only; never set in production
+async function identify(request, env, url) {
+  // `wrangler dev` only: honoured on this machine's own address and nowhere else, whatever the config says.
+  if (env.DEV_EMAIL && (url.hostname === "localhost" || url.hostname === "127.0.0.1")) return env.DEV_EMAIL;
   const token = request.headers.get("Cf-Access-Jwt-Assertion");
   if (!token) return null;
-  const claims = await verifyAccessJwt(token, env);
+  const claims = await verifyAccessJwt(token, env).catch(() => null);  // a malformed token is a sign-in problem, not a 500
   return claims?.email ? String(claims.email).toLowerCase() : null;
+}
+
+// A browser POST from the editor's own page: JSON, and marked same-origin by the browser. A form or script on another
+// site can't produce both, so a signed-in person's cookie can't be used against them from elsewhere.
+function sameOriginJson(request, url) {
+  if (!(request.headers.get("Content-Type") || "").toLowerCase().startsWith("application/json")) return false;
+  const site = request.headers.get("Sec-Fetch-Site");
+  if (site) return site === "same-origin";
+  return request.headers.get("Origin") === url.origin;  // older browsers without Sec-Fetch-Site
 }
 
 const isAdmin = (env, email) => String(env.ADMINS || "").toLowerCase().split(",").map((s) => s.trim()).includes(email);
 
 let certs = { keys: null, at: 0 };
+
+async function loadCerts(env) {
+  const res = await fetch(`https://${env.ACCESS_TEAM}/cdn-cgi/access/certs`);
+  certs = { keys: (await res.json()).keys || [], at: Date.now() };
+}
 
 async function verifyAccessJwt(token, env) {
   const [h, p, s] = token.split(".");
@@ -171,17 +213,21 @@ async function verifyAccessJwt(token, env) {
   const header = JSON.parse(b64text(h));
   const claims = JSON.parse(b64text(p));
   if (header.alg !== "RS256") return null;
-  if (Date.now() - certs.at > 3600e3 || !certs.keys) {
-    const res = await fetch(`https://${env.ACCESS_TEAM}/cdn-cgi/access/certs`);
-    certs = { keys: (await res.json()).keys, at: Date.now() };
+  if (!certs.keys || Date.now() - certs.at > 3600e3) await loadCerts(env);
+  let jwk = certs.keys.find((k) => k.kid === header.kid);
+  // Cloudflare rotates its signing keys: an unknown key id means fetch the current ones (at most once a minute).
+  if (!jwk && Date.now() - certs.at > 60e3) {
+    await loadCerts(env);
+    jwk = certs.keys.find((k) => k.kid === header.kid);
   }
-  const jwk = certs.keys.find((k) => k.kid === header.kid);
   if (!jwk) return null;
   const key = await crypto.subtle.importKey("jwk", jwk, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"]);
   const ok = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", key, b64bytes(s), new TextEncoder().encode(`${h}.${p}`));
   const aud = Array.isArray(claims.aud) ? claims.aud : [claims.aud];
   const now = Date.now() / 1000;
-  if (!ok || !aud.includes(env.ACCESS_AUD) || claims.exp < now || claims.iss !== `https://${env.ACCESS_TEAM}`) return null;
+  if (!ok || !aud.includes(env.ACCESS_AUD) || claims.iss !== `https://${env.ACCESS_TEAM}`) return null;
+  if (typeof claims.exp !== "number" || claims.exp < now) return null;
+  if (typeof claims.nbf === "number" && claims.nbf > now + 60) return null;
   return claims;
 }
 

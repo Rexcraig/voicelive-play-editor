@@ -194,6 +194,9 @@ function showWhere() {
   } else if (n && state.onPedal) {
     text = `Preset ${n} · changed, not saved`;
     title = "You hear the changes now. Save to pedal keeps them; switching presets on the pedal throws them away.";
+  } else if (n && !state.playing) {
+    text = `Preset ${n} · not playing on the pedal`;
+    title = "Connect the pedal to hear it. Nothing on the pedal has changed.";
   } else if (n) {
     text = `Preset ${n} · playing over the pedal's current preset`;
     title = `The pedal's screen shows this name under whatever number it's on; that's normal. To see ${n} there, step to it with the footswitch. Nothing is saved or lost.`;
@@ -211,7 +214,6 @@ function showWhere() {
 
 function push() {
   state.dirty = true;
-  state.playing = true;
   showWhere();
   clearTimeout(state.timer);
   state.timer = setTimeout(send, 120);
@@ -253,6 +255,8 @@ function copyName(base) {
 async function send() {
   const data = await api("/api/send", { name: $("#preset-name").value, values: state.values, tags: state.tags });
   blinkTx(data.ok);
+  state.playing = data.ok;  // only true once the pedal actually has it
+  showWhere();
   if (!data.ok) hint(data.message, "live");
   else if (state.hintSource === "live") hint("");  // clear only our own old error, never a save result
 }
@@ -307,9 +311,14 @@ function showTab(name) {
   }
 }
 
-async function readPedal() {
+// One read at a time: a second caller (the automatic read, Read pedal, Save snapshot) waits for the one running.
+function readPedal() {
+  state.reading ||= readPedalOnce().finally(() => { state.reading = null; });
+  return state.reading;
+}
+
+async function readPedalOnce() {
   const btn = $("#sync-refresh");
-  if (btn.disabled) return;
   btn.disabled = true;
   btn.textContent = "Reading… about 10 s";
   try {
@@ -427,6 +436,7 @@ function loadPreset(p, slot, { play = true } = {}) {
   state.tags = p.tags;
   state.slot = slot || null;
   state.onPedal = !play;  // true only when the pedal itself switched to this stored preset
+  state.suggestSlot = null;
   $("#preset-name").value = p.name;
   render();
   showTab("editor");
@@ -443,8 +453,8 @@ async function openSyx(file) {
     : await (await fetch("/api/syx", { method: "POST", body: bytes })).json();
   if (!data.ok) return hint(`${file.name}: ${data.message}`);
   if (data.presets.length === 1) {
-    loadPreset(data.presets[0]);
-    return hint(`Imported ${data.presets[0].name} from ${file.name}.`);
+    importPreset(data.presets[0], file.name);
+    return;
   }
   $("#pick-title").textContent = `${file.name} has ${data.presets.length} presets`;
   pick.presets = data.presets;
@@ -456,6 +466,16 @@ async function openSyx(file) {
 }
 
 const pick = { presets: [], file: "", genre: null };
+
+// A .syx preset remembers the slot it was saved from (a snapshot holds every preset under its own number), so that
+// number is offered in the Save dialog. A pack's numbers are only positions in the pack and are never offered.
+const slotOf = (p) => (!p.pack && p.number >= 1 && p.number <= 500 ? p.number : null);
+
+function importPreset(p, file) {
+  loadPreset(p, null);
+  state.suggestSlot = slotOf(p);
+  hint(`Imported ${p.name} from ${file}.${state.suggestSlot ? ` It was preset ${state.suggestSlot}; Save to pedal offers that number.` : ""}`);
+}
 
 function renderPick() {
   const q = $("#pick-search").value.trim().toUpperCase();
@@ -482,10 +502,11 @@ function renderPick() {
     const li = document.createElement("li");
     const b = document.createElement("button");
     b.value = "cancel";
-    b.innerHTML = `<span class="pn"></span><span class="genres"></span>`;
+    b.innerHTML = `<span class="slotno"></span><span class="pn"></span><span class="genres"></span>`;
+    b.querySelector(".slotno").textContent = slotOf(p) ? String(slotOf(p)) : "";
     b.querySelector(".pn").textContent = p.name;
     b.querySelector(".genres").textContent = genres.filter((g) => g !== "Favorite").join(" · ");
-    b.onclick = () => { loadPreset(p); hint(`Imported ${p.name} from ${pick.file}.`); };
+    b.onclick = () => importPreset(p, pick.file);
     li.append(b);
     list.append(li);
   }
@@ -516,7 +537,7 @@ async function openSave({ prefillEmpty = false } = {}) {
   const empty = state.pedal.synced ? firstEmpty() : null;
   $("#save-empty").hidden = !empty;
   $("#save-empty").textContent = `Use the first empty slot (${empty})`;
-  input.value = state.slot || (prefillEmpty ? empty || "" : "");
+  input.value = state.slot || state.suggestSlot || (prefillEmpty ? empty || "" : "");
   checkSlot();
   $("#save-dialog").showModal();
   input.select();
@@ -619,9 +640,10 @@ $("#snapshot").onclick = async () => {
   if (!state.connected) return say("Connect the pedal first: a snapshot is read fresh from the pedal.");
   btn.disabled = true;
   btn.textContent = "Reading the pedal…";
+  const started = Date.now();
   try {
     await readPedal();
-    if (!state.pedal.synced || Date.now() - state.pedal.synced > 60e3) return say("The pedal couldn't be read, so no snapshot was saved.");
+    if (!state.pedal.synced || state.pedal.synced < started - 30e3) return say("The pedal couldn't be read, so no snapshot was saved.");
     btn.textContent = "Saving…";
     const parts = [];
     for (const p of state.pedal.presets) {
