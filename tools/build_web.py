@@ -23,7 +23,7 @@ SRC = ("api.js", "boot.js", "midi.js", "rig.js", "storage.js", "tch.js", "spec.j
 
 # Privacy Policy and Terms (web/pages). Operator: Verona Strategic LLC, Florida, like Will's other apps.
 # They are only published once LEGAL_CONTACT is set; until then the build leaves them and their links out.
-LEGAL_CONTACT = None
+LEGAL_CONTACT = "info@veronastrategic.com"
 LEGAL_EFFECTIVE = "September 25, 2026"
 LEGAL_LINKS = '<p class="legal"><a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>\n</footer>'
 
