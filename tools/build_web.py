@@ -18,13 +18,13 @@ sys.path.insert(0, str(ROOT))
 import spec  # noqa: E402
 
 OUT = ROOT / "web/public/vlp"
-UI = ("app.js", "sets.js", "setup.js", "style.css")
+UI = ("app.js", "sets.js", "setup.js", "community.js", "style.css")
 SRC = ("api.js", "boot.js", "midi.js", "rig.js", "storage.js", "tch.js", "spec.json")
 
 # Privacy Policy and Terms (web/pages). Operator: Verona Strategic LLC, Florida, like Will's other apps.
 # They are only published once LEGAL_CONTACT is set; until then the build leaves them and their links out.
 LEGAL_CONTACT = "info@veronastrategic.com"
-LEGAL_EFFECTIVE = "September 25, 2026"
+LEGAL_EFFECTIVE = "September 25, 2026"  # Community sections added the same day, before Community launched
 LEGAL_LINKS = '<p class="legal"><a href="./privacy.html">Privacy</a> · <a href="./terms.html">Terms</a></p>\n</footer>'
 
 # What the page says before the singer has let the browser reach the pedal.
@@ -45,7 +45,7 @@ def index_html():
     # The loader must run before app.js, so the UI's first call already has a transport waiting.
     # Module scripts and deferred classic scripts run after parsing, in document order: with defer added,
     # the loader runs before the UI, so the UI's first call already has a transport.
-    html = re.sub(r'<script src="\./(app|sets|setup)\.js"></script>', r'<script defer src="./\1.js"></script>', html)
+    html = re.sub(r'<script src="\./(app|sets|setup|community)\.js"></script>', r'<script defer src="./\1.js"></script>', html)
     html = html.replace('<script defer src="./app.js"></script>',
                         '<script type="module" src="./src/boot.js"></script>\n<script defer src="./app.js"></script>')
     html = html.replace("<main id=\"blocks\"></main>", CONNECT.strip() + "\n\n<main id=\"blocks\"></main>")

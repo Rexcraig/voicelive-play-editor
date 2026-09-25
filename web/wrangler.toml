@@ -3,9 +3,24 @@
 # Deploy with tools/deploy_web.sh, which reads the API token from ~/.cloudflare/vlp-deploy-token.
 name = "vlp-editor"
 compatibility_date = "2026-09-01"
+main = "worker/index.js"       # answers /vlp/api/community/*; everything else is a static file
+workers_dev = false            # only reachable through occhiphoto.com, i.e. behind Cloudflare Access
 
 [assets]
 directory = "./public"
+binding = "ASSETS"
+
+# Cloudflare Access for occhiphoto.com/vlp: the worker verifies the signed-in person's token against these.
+[vars]
+ACCESS_TEAM = "your-team.cloudflareaccess.com"
+ACCESS_AUD = "your-access-application-aud"
+ADMINS = "admin@example.com"  # can hide or delete any preset and see reports
+
+# Community storage (created 2026-09-25). Schema: worker/schema.sql.
+[[d1_databases]]
+binding = "DB"
+database_name = "vlp-community"
+database_id = "your-d1-database-id"
 
 # The Worker sees the whole path, so /vlp/index.html is served from public/vlp/index.html.
 [[routes]]

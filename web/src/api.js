@@ -241,7 +241,21 @@ async function readOneSlot(slot) {
 
 // What the UI's api() calls instead of fetch. Anything the pedal refuses comes back as {ok:false,message},
 // so the singer sees the same words as in the desktop version.
+// Community lives on the Worker (web/worker/index.js), under ./api/community/ next to the page.
+async function community(path, body) {
+  const url = "./api/community/" + path.slice("/api/community/".length);
+  try {
+    const res = await fetch(url, body === undefined ? { credentials: "same-origin" }
+      : { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (res.status === 401 || res.redirected) return fail("Your sign-in has expired. Reload the page to sign in again.");
+    return await res.json();
+  } catch {
+    return fail("Can't reach Community right now. Check your internet connection and try again.");
+  }
+}
+
 export async function transport(path, body) {
+  if (path.startsWith("/api/community/")) return community(path, body);
   try {
     if (path.startsWith("/api/pedal/slot/")) return await readOneSlot(Math.trunc(+path.split("/").pop()));
     const route = ROUTES[path];

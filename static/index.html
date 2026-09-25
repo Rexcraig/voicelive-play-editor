@@ -32,6 +32,7 @@
       <div class="menu-items">
         <button id="open">Import presets</button>
         <button id="export">Export preset</button>
+        <button id="share-open" hidden>Share to Community</button>
       </div>
     </details>
     <input type="file" id="open-file" accept=".syx,.tch" hidden>
@@ -43,6 +44,7 @@
   <button role="tab" data-tab="editor" aria-selected="true">Editor</button>
   <button role="tab" data-tab="pedal" aria-selected="false">On the pedal</button>
   <button role="tab" data-tab="sets" aria-selected="false">Sets</button>
+  <button role="tab" data-tab="community" aria-selected="false" id="community-tab" hidden>Community</button>
   <button role="tab" data-tab="setup" aria-selected="false" class="tab-apart">Setup</button>
 </nav>
 </div>
@@ -84,6 +86,23 @@
   <div class="setup-grid" id="setup-pages"></div>
 </section>
 
+<section id="community" hidden>
+  <div class="community-head">
+    <div>
+      <h2>Community presets</h2>
+      <p>Presets other singers made and shared. <strong>Try it</strong> plays one on your pedal without saving anything; <strong>Save a copy</strong> puts it on your pedal, with the usual backup first.</p>
+    </div>
+    <button class="ghost" id="community-share">Share the preset in the editor</button>
+  </div>
+  <div class="pedal-head">
+    <p id="community-count"></p>
+    <input id="community-search" type="search" placeholder="Search name, description or singer" spellcheck="false" autocomplete="off">
+  </div>
+  <div id="community-genres" role="group" aria-label="Filter by genre"></div>
+  <p id="community-note" hidden></p>
+  <ol id="community-list"></ol>
+</section>
+
 <section id="sets" hidden>
   <p id="sets-notice" hidden></p>
   <aside class="sets-side">
@@ -111,6 +130,21 @@
     <div class="actions">
       <button value="cancel" formnovalidate>Cancel</button>
       <button class="primary" id="save-confirm" value="save">Replace preset</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="share-dialog">
+  <form method="dialog">
+    <h2>Share to Community</h2>
+    <p class="share-what">Sharing <strong id="share-name"></strong>, exactly as it sounds in the editor now.</p>
+    <label class="field"><span>Your name, as shown with it</span><input id="share-author" maxlength="30" autocomplete="nickname"></label>
+    <label class="field"><span>Description <em>(optional)</em></span><textarea id="share-description" maxlength="300" rows="3" placeholder="What it's for, the song, how you use HIT…"></textarea></label>
+    <fieldset class="field"><legend>Genres</legend><div id="share-genres"></div></fieldset>
+    <label class="check"><input type="checkbox" id="share-rights"><span>I made this preset, or have the right to share it. It will be visible to everyone who uses the editor, under the <a href="./terms.html" target="_blank">Terms</a>.</span></label>
+    <p class="warn" id="share-error" hidden></p>
+    <div class="actions">
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" id="share-confirm" value="share">Share</button>
     </div>
   </form>
 </dialog>
@@ -175,5 +209,6 @@
 <script src="/app.js"></script>
 <script src="/sets.js"></script>
 <script src="/setup.js"></script>
+<script src="/community.js"></script>
 </body>
 </html>

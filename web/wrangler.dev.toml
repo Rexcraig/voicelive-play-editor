@@ -1,0 +1,18 @@
+# Local testing only: `npx wrangler dev --config wrangler.dev.toml` (from web/). A local SQLite stands in for D1,
+# and DEV_EMAIL replaces the Cloudflare Access sign-in. Never deploy with this file.
+name = "vlp-editor-dev"
+compatibility_date = "2026-09-01"
+main = "worker/index.js"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+
+[vars]
+DEV_EMAIL = "tester@example.com"
+ADMINS = "tester@example.com"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "vlp-community-dev"
+database_id = "00000000-0000-0000-0000-000000000000"

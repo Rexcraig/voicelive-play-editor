@@ -295,6 +295,8 @@ function showTab(name) {
   $("footer").hidden = name !== "editor";
   $("#pedal").hidden = name !== "pedal";
   $("#sets").hidden = name !== "sets";
+  $("#community").hidden = name !== "community";
+  if (name === "community") openCommunityTab();
   $("#setup").hidden = name !== "setup";
   if (name === "sets") openSetsTab();
   if (name === "setup") openSetupTab();
