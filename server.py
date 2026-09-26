@@ -476,7 +476,7 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path in ("/", "/index.html"):
             return self._send(200, (HERE / "static/index.html").read_bytes(), "text/html; charset=utf-8")
-        for name, ctype in (("app.js", "text/javascript"), ("sets.js", "text/javascript"), ("setup.js", "text/javascript"), ("community.js", "text/javascript"), ("style.css", "text/css")):
+        for name, ctype in (("app.js", "text/javascript"), ("sets.js", "text/javascript"), ("setup.js", "text/javascript"), ("community.js", "text/javascript"), ("stage.js", "text/javascript"), ("style.css", "text/css")):
             if self.path == "/" + name:
                 return self._send(200, (HERE / "static" / name).read_bytes(), ctype)
         if self.path.startswith("/fonts/"):  # self-hosted OFL fonts, see static/style.css

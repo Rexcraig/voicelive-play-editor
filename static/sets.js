@@ -139,7 +139,12 @@ function renderSetEditor() {
   const load = el("button", "primary", "Load onto pedal");
   load.disabled = !n;
   load.onclick = openLoadDialog;
-  actions.append(del, load);
+  const perform = el("button", "ghost", "Stage view");
+  perform.type = "button";
+  perform.disabled = !n;
+  perform.title = "Run this set full-screen: each part plays on the pedal as you go";
+  perform.onclick = () => openStage(set);
+  actions.append(del, perform, load);
   head.append(titleCol, actions);
   box.append(head);
 
@@ -245,7 +250,16 @@ function renderPresetChip(set, song, preset, index, position) {
   x.type = "button";
   x.title = "Remove preset from song";
   x.onclick = () => { song.presets.splice(index, 1); saveSets(); renderSets(); };
-  chip.append(pos, name, x);
+  // The part's name in Stage view ("Verse", "Chorus"): a song's presets are its cues, in order.
+  const label = el("input", "chip-label");
+  label.value = preset.label || "";
+  label.placeholder = "Part";
+  label.maxLength = 20;
+  label.spellcheck = false;
+  label.title = "Name this part, e.g. Verse or Chorus. Stage view shows it.";
+  label.draggable = false;
+  label.oninput = () => { if (label.value.trim()) preset.label = label.value.trim(); else delete preset.label; saveSets(); };
+  chip.append(pos, label, name, x);
 
   chip.ondragstart = (e) => {
     e.stopPropagation();

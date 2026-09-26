@@ -205,10 +205,34 @@
   </form>
 </dialog>
 
+<section id="stage" hidden aria-label="Stage view">
+  <header class="stage-top">
+    <span id="stage-set"></span>
+    <span class="stage-top-right">
+      <span id="stage-offline" hidden>Pedal not connected</span>
+      <button type="button" class="ghost" id="stage-close">Close <kbd>Esc</kbd></button>
+    </span>
+  </header>
+  <div class="stage-now">
+    <h1 id="stage-song"></h1>
+    <p id="stage-cue"></p>
+    <div id="stage-fx"></div>
+    <p id="stage-status" role="status"></p>
+  </div>
+  <div class="stage-controls">
+    <button type="button" id="stage-prev-btn">‹ Back</button>
+    <p id="stage-next"></p>
+    <button type="button" class="primary" id="stage-next-btn">Next ›</button>
+  </div>
+  <ol id="stage-list"></ol>
+  <p class="stage-keys">Arrows, Space or a page-turner pedal: ← → change part · ↑ ↓ change song</p>
+</section>
+
 <div id="drop-hint" hidden>Drop a preset file to import it</div>
 <script src="/app.js"></script>
 <script src="/sets.js"></script>
 <script src="/setup.js"></script>
 <script src="/community.js"></script>
+<script src="/stage.js"></script>
 </body>
 </html>
