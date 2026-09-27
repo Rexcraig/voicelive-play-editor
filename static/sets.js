@@ -139,12 +139,17 @@ function renderSetEditor() {
   const load = el("button", "primary", "Load onto pedal");
   load.disabled = !n;
   load.onclick = openLoadDialog;
+  const print = el("button", "ghost", "Print set list");
+  print.type = "button";
+  print.disabled = !n;
+  print.title = "A one-page set list with the pedal's preset numbers, for the mic stand";
+  print.onclick = () => printSetList(set);
   const perform = el("button", "ghost", "Stage view");
   perform.type = "button";
   perform.disabled = !n;
   perform.title = "Run this set full-screen: each part plays on the pedal as you go";
   perform.onclick = () => openStage(set);
-  actions.append(del, perform, load);
+  actions.append(del, print, perform, load);
   head.append(titleCol, actions);
   box.append(head);
 
@@ -475,3 +480,60 @@ $("#load-go").onclick = async () => {
 };
 
 $("#set-new").onclick = newSet;
+
+
+// --- printable set list -----------------------------------------------------------------------------------------
+// One page for the mic stand: every song in order, each part with the preset number the pedal shows once the set
+// is loaded. The numbers come from where the set was last loaded; if the pedal (as last read) no longer holds the
+// set there, the sheet says so instead of printing numbers that would be wrong on stage.
+
+async function printSetList(set) {
+  await loadPedal();  // the pedal list as last read; no pedal needed
+  const start = set.start || null;
+  const onPedal = new Map((state.pedal?.presets || []).map((p) => [p.slot, p.name]));
+  const sheet = $("#print-sheet");
+  sheet.innerHTML = "";
+  const head = el("header", "ps-head");
+  head.append(el("h1", null, set.name || "Untitled set"));
+  const total = allPresets(set).length;
+  let note;
+  if (!start) {
+    note = "Not loaded onto the pedal yet: the numbers below are the running order, not preset numbers.";
+  } else {
+    const wrong = allPresets(set).map((p, i) => ({ p, slot: start + i }))
+      .filter(({ p, slot }) => onPedal.size && onPedal.get(slot) !== pedalName(p.name));
+    note = wrong.length
+      ? `Check before the gig: the pedal no longer holds this set at preset ${wrong[0].slot}. Load the set again, then reprint.`
+      : `Presets ${start}–${start + total - 1} on the pedal. Up footswitch = next part.`;
+  }
+  head.append(el("p", "ps-note", note));
+  sheet.append(head);
+
+  const list = el("ol", "ps-songs");
+  let pos = 0;
+  set.songs.forEach((song) => {
+    const li = el("li", "ps-song");
+    const first = (start || 1) + pos;
+    const last = first + song.presets.length - 1;
+    li.append(el("span", "ps-range", song.presets.length > 1 ? `${first}–${last}` : String(first)));
+    const body = el("div", "ps-body");
+    body.append(el("span", "ps-title", song.title || "Untitled song"));
+    const parts = el("ul", "ps-parts");
+    song.presets.forEach((preset, i) => {
+      const fx = BLOCK_STATES.filter(([slot]) => preset.params[slot])
+        .map(([slot, label]) => (preset.params[slot] === 2 ? `${label} on HIT` : label));
+      const row = el("li");
+      row.append(el("b", null, String(first + i)));
+      row.append(el("span", "ps-part", [preset.label, preset.name].filter(Boolean).join(" · ")));
+      row.append(el("span", "ps-fx", fx.length ? fx.join(", ") : "dry"));
+      parts.append(row);
+    });
+    body.append(parts);
+    li.append(body);
+    list.append(li);
+    pos += song.presets.length;
+  });
+  sheet.append(list);
+  sheet.append(el("p", "ps-foot", `Printed ${new Date().toLocaleDateString([], { dateStyle: "medium" })}`));
+  window.print();
+}

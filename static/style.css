@@ -828,3 +828,24 @@ button.ghost.danger { color: var(--danger); }
   .leds i, .led, .card, .card-head, .card-title h2, .value { transition-duration: 150ms !important; transition-property: background-color, box-shadow, border-color, color !important; }
   button:active, input[type="range"]:active::-webkit-slider-thumb { transform: none; }
 }
+
+/* ---------- printable set list: paper, not screen ---------- */
+#print-sheet { display: none; }
+@media print {
+  @page { margin: 14mm; }
+  body { background: #fff !important; color: #000 !important; }
+  body > *:not(#print-sheet) { display: none !important; }
+  #print-sheet { display: block; font-family: var(--sans); color: #000; }
+  .ps-head h1 { margin: 0; font-size: 30pt; font-weight: 600; line-height: 1.1; }
+  .ps-note { margin: 4pt 0 14pt; font-size: 11pt; }
+  .ps-songs { list-style: none; margin: 0; padding: 0; }
+  .ps-song { display: grid; grid-template-columns: 22mm 1fr; gap: 4mm; padding: 5pt 0; border-top: 1pt solid #000; break-inside: avoid; }
+  .ps-range { font: 600 22pt/1.1 var(--mono); }
+  .ps-title { display: block; font-size: 20pt; font-weight: 600; line-height: 1.15; }
+  .ps-parts { list-style: none; margin: 3pt 0 0; padding: 0; }
+  .ps-parts li { display: grid; grid-template-columns: 10mm auto 1fr; gap: 3mm; font-size: 12pt; line-height: 1.35; }
+  .ps-parts b { font-family: var(--mono); }
+  .ps-part { font-family: var(--mono); letter-spacing: 0.02em; }
+  .ps-fx { color: #333; }
+  .ps-foot { margin-top: 12pt; font-size: 9pt; color: #555; }
+}
