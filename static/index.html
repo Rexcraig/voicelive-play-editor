@@ -25,21 +25,47 @@
   <div class="bar-right">
     <div class="tx" id="tx" title="Lights each time a change is sent to the pedal"><span class="dot"></span>Sent</div>
     <div class="status" id="status" title="Connection to the pedal">
-      <svg class="pedal-icon" viewBox="0 0 48 30" aria-hidden="true">
-        <rect class="body" x="1" y="1" width="46" height="28" rx="3.5"/>
-        <rect class="panel" x="7" y="4" width="34" height="9" rx="1.2"/>
-        <rect class="screen" x="17" y="5.2" width="14" height="6.6" rx="0.6"/>
-        <rect class="soft" x="9" y="5.4" width="5.5" height="1.6" rx="0.6"/>
-        <rect class="soft" x="9" y="7.7" width="5.5" height="1.6" rx="0.6"/>
-        <rect class="soft" x="9" y="10" width="5.5" height="1.6" rx="0.6"/>
-        <rect class="soft" x="33.5" y="5.4" width="5.5" height="1.6" rx="0.6"/>
-        <rect class="soft" x="33.5" y="7.7" width="5.5" height="1.6" rx="0.6"/>
-        <rect class="soft" x="33.5" y="10" width="5.5" height="1.6" rx="0.6"/>
-        <circle class="knob" cx="24" cy="15.6" r="1.9"/>
-        <line class="fold" x1="3" y1="18.4" x2="45" y2="18.4"/>
-        <circle class="switch" cx="10" cy="24.4" r="2.3"/>
-        <circle class="switch" cx="24" cy="24.4" r="2.3"/>
-        <circle class="switch" cx="38" cy="24.4" r="2.3"/>
+      <svg class="pedal-icon" viewBox="0 0 96 60" aria-hidden="true">
+        <defs>
+          <linearGradient id="pi-body" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#4a9ad8"/><stop offset="0.55" stop-color="#2c78b8"/><stop offset="1" stop-color="#1d5a90"/>
+          </linearGradient>
+          <linearGradient id="pi-lower" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#3584c6"/><stop offset="1" stop-color="#1b5286"/>
+          </linearGradient>
+          <linearGradient id="pi-glass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#1b2433"/><stop offset="1" stop-color="#05080d"/>
+          </linearGradient>
+          <linearGradient id="pi-lcd" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" class="lcd-a"/><stop offset="1" class="lcd-b"/>
+          </linearGradient>
+          <radialGradient id="pi-chrome" cx="0.38" cy="0.32" r="0.75">
+            <stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c7"/><stop offset="1" stop-color="#5d666f"/>
+          </radialGradient>
+          <radialGradient id="pi-knob" cx="0.4" cy="0.35" r="0.7">
+            <stop offset="0" stop-color="#3a4f86"/><stop offset="1" stop-color="#0c1530"/>
+          </radialGradient>
+        </defs>
+        <rect class="shadow" x="2" y="3.5" width="92" height="55.5" rx="7"/>
+        <rect x="1.5" y="1.5" width="93" height="55" rx="7" fill="url(#pi-body)"/>
+        <path d="M5 34 H91 L94.5 49.5 Q94.5 56.5 87.5 56.5 H8.5 Q1.5 56.5 1.5 49.5 Z" fill="url(#pi-lower)"/>
+        <path class="edge" d="M8 2.2 H88"/>
+        <line class="seam" x1="4.5" y1="34" x2="91.5" y2="34"/>
+        <rect x="16" y="7" width="64" height="18.5" rx="2.5" fill="url(#pi-glass)" class="panel"/>
+        <g class="softs">
+          <rect x="19.5" y="9.4" width="10" height="3" rx="1.2"/><rect x="19.5" y="14.8" width="10" height="3" rx="1.2"/><rect x="19.5" y="20.2" width="10" height="3" rx="1.2"/>
+          <rect x="66.5" y="9.4" width="10" height="3" rx="1.2"/><rect x="66.5" y="14.8" width="10" height="3" rx="1.2"/><rect x="66.5" y="20.2" width="10" height="3" rx="1.2"/>
+        </g>
+        <rect class="screen" x="33" y="9" width="30" height="14.5" rx="1" fill="url(#pi-lcd)"/>
+        <g class="lcd-text"><rect x="37" y="12" width="22" height="2.6" rx="0.6"/><rect x="42.5" y="17" width="11" height="3.4" rx="0.6"/></g>
+        <path class="glare" d="M34 9.8 H55 L50 15 H34 Z"/>
+        <circle cx="48" cy="29.5" r="3.4" fill="url(#pi-knob)" class="knob"/>
+        <g class="leds"><circle cx="20" cy="39" r="0.9"/><circle cx="48" cy="39" r="0.9"/><circle cx="76" cy="39" r="0.9"/></g>
+        <g class="switches">
+          <circle cx="20" cy="48" r="5.6" class="ring"/><circle cx="20" cy="48" r="3.6" fill="url(#pi-chrome)"/>
+          <circle cx="48" cy="48" r="5.6" class="ring"/><circle cx="48" cy="48" r="3.6" fill="url(#pi-chrome)"/>
+          <circle cx="76" cy="48" r="5.6" class="ring"/><circle cx="76" cy="48" r="3.6" fill="url(#pi-chrome)"/>
+        </g>
       </svg>
       <span class="dot"></span><span id="status-text">checking…</span>
     </div>

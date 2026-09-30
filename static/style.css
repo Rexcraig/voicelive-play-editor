@@ -209,17 +209,26 @@ input, textarea { caret-color: var(--lit); }
 .status.ok .dot { background: var(--ok); box-shadow: 0 0 6px 1px oklch(0.80 0.17 148 / 0.4); }
 .status.bad .dot { background: var(--bad); box-shadow: 0 0 6px 1px oklch(0.70 0.19 28 / 0.4); }
 .status.bad { color: var(--text); }
-/* our own drawing of the pedal (not TC's artwork), in the Play's own blue; its screen lights up when the pedal answers */
-.pedal-icon { --pedal: #2f7fc3; --pedal-edge: #1c5285; --pedal-lcd: #3a4dff; width: 41px; height: 26px; flex: none; }
-.pedal-icon .body { fill: var(--pedal); stroke: var(--pedal-edge); stroke-width: 1; }
-.pedal-icon .panel { fill: #0b1522; }
-.pedal-icon .screen { fill: #16204a; transition: fill 300ms ease, filter 300ms ease; }
-.pedal-icon .soft { fill: #4f93cf; }
-.pedal-icon .knob { fill: #14244a; stroke: #0b1522; stroke-width: 0.6; }
-.pedal-icon .fold { stroke: var(--pedal-edge); stroke-width: 0.8; }
-.pedal-icon .switch { fill: #c9ced4; stroke: #20262c; stroke-width: 1.3; }
-.status.ok .pedal-icon .screen { fill: var(--pedal-lcd); filter: drop-shadow(0 0 2px rgb(58 77 255 / 0.8)); }
-.status.bad .pedal-icon { opacity: 0.75; }
+/* our own drawing of the pedal (not TC's artwork), in the Play's anodised blue; its LCD lights when the pedal answers */
+.pedal-icon { width: 54px; height: 34px; flex: none; overflow: visible; }
+.pedal-icon .shadow { fill: oklch(0 0 0 / 0.55); filter: blur(1.5px); }
+.pedal-icon .edge { stroke: oklch(1 0 0 / 0.35); stroke-width: 0.8; fill: none; }
+.pedal-icon .seam { stroke: oklch(0.2 0.05 250 / 0.7); stroke-width: 0.7; }
+.pedal-icon .panel { stroke: oklch(0 0 0 / 0.6); stroke-width: 0.6; }
+.pedal-icon .softs rect { fill: #3f86c4; opacity: 0.55; }
+.pedal-icon .lcd-a { stop-color: #10183a; transition: stop-color 300ms ease; }
+.pedal-icon .lcd-b { stop-color: #0a1028; transition: stop-color 300ms ease; }
+.pedal-icon .screen { stroke: oklch(0 0 0 / 0.7); stroke-width: 0.5; transition: filter 300ms ease; }
+.pedal-icon .lcd-text rect { fill: #e8eeff; opacity: 0; transition: opacity 300ms ease; }
+.pedal-icon .glare { fill: oklch(1 0 0 / 0.07); }
+.pedal-icon .knob { stroke: oklch(0 0 0 / 0.6); stroke-width: 0.6; }
+.pedal-icon .leds circle { fill: #20303f; }
+.pedal-icon .ring { fill: #11161c; stroke: oklch(1 0 0 / 0.12); stroke-width: 0.6; }
+.status.ok .pedal-icon .lcd-a { stop-color: #4b5dff; }
+.status.ok .pedal-icon .lcd-b { stop-color: #2332e0; }
+.status.ok .pedal-icon .screen { filter: drop-shadow(0 0 2.5px rgb(70 90 255 / 0.85)); }
+.status.ok .pedal-icon .lcd-text rect { opacity: 0.92; }
+.status.bad .pedal-icon { opacity: 0.8; }
 
 button {
   font-size: 11.5px; line-height: 1; padding: 11px 14px; border-radius: var(--radius-sm); cursor: pointer;
