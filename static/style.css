@@ -212,10 +212,11 @@ input, textarea { caret-color: var(--lit); }
 /* our own drawing of the pedal (not TC's artwork), in the Play's anodised blue; its LCD lights when the pedal answers */
 .pedal-icon { width: 54px; height: 34px; flex: none; overflow: visible; }
 .pedal-icon .shadow { fill: oklch(0 0 0 / 0.55); filter: blur(1.5px); }
-.pedal-icon .edge { stroke: oklch(1 0 0 / 0.35); stroke-width: 0.8; fill: none; }
+.pedal-icon .edge { stroke: oklch(1 0 0 / 0.55); stroke-width: 0.9; fill: none; }
+.pedal-icon .glint { fill: #fff; opacity: 0.85; }
 .pedal-icon .seam { stroke: oklch(0.2 0.05 250 / 0.7); stroke-width: 0.7; }
 .pedal-icon .panel { stroke: oklch(0 0 0 / 0.6); stroke-width: 0.6; }
-.pedal-icon .softs rect { fill: #3f86c4; opacity: 0.55; }
+.pedal-icon .softs rect { fill: #3b7fbd; opacity: 0.5; }
 .pedal-icon .lcd-a { stop-color: #10183a; transition: stop-color 300ms ease; }
 .pedal-icon .lcd-b { stop-color: #0a1028; transition: stop-color 300ms ease; }
 .pedal-icon .screen { stroke: oklch(0 0 0 / 0.7); stroke-width: 0.5; transition: filter 300ms ease; }

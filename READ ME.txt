@@ -1,4 +1,4 @@
-VoiceLive Play Editor v0.17 (test version)
+VoiceLive Play Editor v0.18 (test version)
 
 The version is also shown next to "VoiceLive Play" at the top left of the editor. Mention it when you
 report a problem.

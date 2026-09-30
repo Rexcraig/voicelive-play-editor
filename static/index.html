@@ -28,10 +28,10 @@
       <svg class="pedal-icon" viewBox="0 0 96 60" aria-hidden="true">
         <defs>
           <linearGradient id="pi-body" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#4a9ad8"/><stop offset="0.55" stop-color="#2c78b8"/><stop offset="1" stop-color="#1d5a90"/>
+            <stop offset="0" stop-color="#2f6fa8"/><stop offset="0.55" stop-color="#1c4f82"/><stop offset="1" stop-color="#113459"/>
           </linearGradient>
           <linearGradient id="pi-lower" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#3584c6"/><stop offset="1" stop-color="#1b5286"/>
+            <stop offset="0" stop-color="#215b93"/><stop offset="1" stop-color="#0e2c4c"/>
           </linearGradient>
           <linearGradient id="pi-glass" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stop-color="#1b2433"/><stop offset="1" stop-color="#05080d"/>
@@ -42,6 +42,10 @@
           <radialGradient id="pi-chrome" cx="0.38" cy="0.32" r="0.75">
             <stop offset="0" stop-color="#f4f6f8"/><stop offset="0.45" stop-color="#b9c0c7"/><stop offset="1" stop-color="#5d666f"/>
           </radialGradient>
+          <linearGradient id="pi-sheen" x1="0" y1="0" x2="0.55" y2="1">
+            <stop offset="0" stop-color="#fff" stop-opacity="0.42"/><stop offset="0.35" stop-color="#fff" stop-opacity="0.1"/><stop offset="0.36" stop-color="#fff" stop-opacity="0"/>
+          </linearGradient>
+          <clipPath id="pi-clip"><rect x="1.5" y="1.5" width="93" height="55" rx="7"/></clipPath>
           <radialGradient id="pi-knob" cx="0.4" cy="0.35" r="0.7">
             <stop offset="0" stop-color="#3a4f86"/><stop offset="1" stop-color="#0c1530"/>
           </radialGradient>
@@ -49,6 +53,7 @@
         <rect class="shadow" x="2" y="3.5" width="92" height="55.5" rx="7"/>
         <rect x="1.5" y="1.5" width="93" height="55" rx="7" fill="url(#pi-body)"/>
         <path d="M5 34 H91 L94.5 49.5 Q94.5 56.5 87.5 56.5 H8.5 Q1.5 56.5 1.5 49.5 Z" fill="url(#pi-lower)"/>
+        <rect x="1.5" y="1.5" width="93" height="55" rx="7" fill="url(#pi-sheen)" clip-path="url(#pi-clip)"/>
         <path class="edge" d="M8 2.2 H88"/>
         <line class="seam" x1="4.5" y1="34" x2="91.5" y2="34"/>
         <rect x="16" y="7" width="64" height="18.5" rx="2.5" fill="url(#pi-glass)" class="panel"/>
@@ -60,11 +65,13 @@
         <g class="lcd-text"><rect x="37" y="12" width="22" height="2.6" rx="0.6"/><rect x="42.5" y="17" width="11" height="3.4" rx="0.6"/></g>
         <path class="glare" d="M34 9.8 H55 L50 15 H34 Z"/>
         <circle cx="48" cy="29.5" r="3.4" fill="url(#pi-knob)" class="knob"/>
+        <circle cx="46.9" cy="28.4" r="0.9" class="glint"/>
         <g class="leds"><circle cx="20" cy="39" r="0.9"/><circle cx="48" cy="39" r="0.9"/><circle cx="76" cy="39" r="0.9"/></g>
         <g class="switches">
           <circle cx="20" cy="48" r="5.6" class="ring"/><circle cx="20" cy="48" r="3.6" fill="url(#pi-chrome)"/>
           <circle cx="48" cy="48" r="5.6" class="ring"/><circle cx="48" cy="48" r="3.6" fill="url(#pi-chrome)"/>
           <circle cx="76" cy="48" r="5.6" class="ring"/><circle cx="76" cy="48" r="3.6" fill="url(#pi-chrome)"/>
+          <circle cx="18.8" cy="46.8" r="1" class="glint"/><circle cx="46.8" cy="46.8" r="1" class="glint"/><circle cx="74.8" cy="46.8" r="1" class="glint"/>
         </g>
       </svg>
       <span class="dot"></span><span id="status-text">checking…</span>
