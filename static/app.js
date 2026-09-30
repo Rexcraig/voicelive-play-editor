@@ -8,6 +8,9 @@ const fmt = {
 };
 
 async function boot() {
+  // Draw only once every script on the page has run: render() uses infoButton() from setup.js, and with the files
+  // already cached the loader below can finish before the later scripts have executed (seen 09-30: no effect cards).
+  if (document.readyState === "loading") await new Promise((r) => document.addEventListener("DOMContentLoaded", r, { once: true }));
   // The browser-only build has no server: it sets vlpTransport, and every call below goes there instead.
   if (globalThis.vlpReady) await globalThis.vlpReady;
   state.spec = await api("/api/spec");
