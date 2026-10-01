@@ -132,6 +132,11 @@ function setupRow(f) {
       input.oninput = () => mirrorPitch(+input.value);
     }
     input.onchange = () => setupChange(f.index, +input.value);  // on release: one write per drag
+    typeable(out, input, (t) => {
+      if (f.kind !== "locut") return typedNumber(t, f.index === 8 ? 0 : null);
+      const hz = typedNumber(t);  // typed in Hz; the pedal stores 1/24-octave steps from 20 Hz
+      return hz > 0 ? 24 * Math.log2(hz / 20) : null;
+    });
     wrap.append(input, out);
     row.append(wrap);
   } else {  // step / hz2: range not measured on the unit, so +/-1 and let the pedal's read-back decide
@@ -333,6 +338,7 @@ function renderPitchPanel(note, v) {
   note.append(row, el("p", "global-caption", "Kept on the pedal as soon as you let go, for every preset. Save to pedal doesn't store it."));
   input.oninput = () => mirrorPitch(+input.value);
   input.onchange = () => setupChange(8, +input.value);
+  typeable(out, input, (t) => typedNumber(t, 0));
   mirrorPitch(v[8]);
 }
 

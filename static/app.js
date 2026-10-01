@@ -7,6 +7,49 @@ const fmt = {
   range: (v) => `${v}`,
 };
 
+// Click a slider's readout window to type the value instead of dragging. `parse` turns what was typed into the
+// slider's own number (null = not understood); the slider's oninput/onchange then run as if it had been dragged
+// there, so typing plays on the pedal (and, for Setup, writes) exactly like a drag does.
+function typeable(out, slider, parse) {
+  out.tabIndex = 0;
+  out.classList.add("typeable");
+  out.title = "Click to type a value";
+  out.setAttribute("role", "button");
+  const edit = () => {
+    if (slider.disabled || out.querySelector("input")) return;
+    const box = document.createElement("input");
+    box.className = "value-edit";
+    box.value = out.textContent;
+    box.setAttribute("aria-label", "Type a value, then press Enter");
+    let done = false;
+    const finish = (commit) => {
+      if (done) return;
+      done = true;
+      const v = commit ? parse(box.value.trim().toLowerCase()) : null;
+      box.remove();
+      if (v == null || Number.isNaN(v)) return;
+      const clamped = Math.min(+slider.max, Math.max(+slider.min, Math.round(v)));
+      if (clamped === +slider.value) return;
+      slider.value = clamped;
+      slider.oninput?.();
+      slider.onchange?.();
+    };
+    box.onkeydown = (e) => {
+      if (e.key === "Enter") { e.preventDefault(); finish(true); out.focus(); }
+      if (e.key === "Escape") { e.preventDefault(); finish(false); out.focus(); }
+    };
+    box.onblur = () => finish(true);
+    out.append(box);
+    box.focus();
+    box.select();
+  };
+  out.onclick = edit;
+  out.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); edit(); } };
+}
+
+// The number in what was typed: "-12 dB" -> -12, "1.5" -> 1.5; "off" -> the given value.
+const typedNumber = (text, off = null) => (/^of/.test(text) ? off : parseFloat(text.replace(/[^0-9.+-]/g, "")));
+
 async function boot() {
   // Draw only once every script on the page has run: render() uses infoButton() from setup.js, and with the files
   // already cached the loader below can finish before the later scripts have executed (seen 09-30: no effect cards).
@@ -178,6 +221,7 @@ function control(p) {
       out.textContent = fmt[p.kind === "db" ? "db" : "range"](+input.value, p);
       push();
     };
+    typeable(out, input, (t) => typedNumber(t, p.kind === "db" ? p.min : null));
     wrap.append(input, out);
     row.append(wrap);
   }

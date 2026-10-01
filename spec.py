@@ -5,7 +5,7 @@ Decoded from 877 official TC-Helicon presets and confirmed on the unit where mar
 """
 
 # The editor's version. Bump it for every package handed to anyone, then tag git (vX.Y) and name the zip to match.
-VERSION = "0.18"
+VERSION = "0.19"
 
 OFF, ON, HIT = 0, 1, 2
 
