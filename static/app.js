@@ -259,6 +259,14 @@ function showWhere() {
   el.classList.toggle("unsaved", !(n && state.onPedal && !state.dirty));
 }
 
+// Changes made in the editor live only in this tab (and the pedal's edit buffer, which the editor can't read back),
+// so leaving or refreshing the page with unsaved changes asks first. The browser shows its own wording.
+window.addEventListener("beforeunload", (e) => {
+  if (!state.dirty) return;
+  e.preventDefault();
+  e.returnValue = "";
+});
+
 function push() {
   state.dirty = true;
   showWhere();
