@@ -490,6 +490,17 @@ $("#load-go").onclick = async () => {
   state.pedal = null;
   await loadPedal();
   if (!batch) renderSets();
+  // Save all from a file: once everything is on the pedal there's nothing left to do here, so close and say so in
+  // the status line. On a failure the dialog stays open: its table shows where loading stopped.
+  if (batch && data.ok) {
+    $("#load-dialog").close();
+    const done = $("#load-result").textContent;
+    hint(done);
+    showTab("pedal");
+    $("#pedal-msg").textContent = done;
+    $("#pedal-msg").hidden = false;
+    return;
+  }
   await planLoad();
 };
 $("#load-dialog").addEventListener("close", () => { sets.batch = null; });

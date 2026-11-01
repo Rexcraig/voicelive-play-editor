@@ -349,6 +349,7 @@ const BLOCK_STATES = [[33, "Harmony", "harmony"], [34, "Double", "double"], [32,
   [30, "µMod", "umod"], [36, "HardTune", "hardtune"], [35, "Transducer", "megaphone"]];
 
 function showTab(name) {
+  $("#pedal-msg").hidden = true;  // a one-off result line (Save all); gone once the singer moves on
   document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === name)));
   $("#blocks").hidden = name !== "editor";
   $("footer").hidden = name !== "editor";
