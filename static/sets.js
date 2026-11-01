@@ -1,7 +1,7 @@
 // Sets: named, ordered song lists. Each song holds one or more presets (full copies, so a set survives pedal changes).
 // "Load onto pedal" writes the set's presets, in order, into consecutive slots.
 
-const sets = { list: [], revision: 0, current: null, loaded: false, saveTimer: null, saving: Promise.resolve(), picker: null, plan: null, drag: null };
+const sets = { list: [], revision: 0, current: null, loaded: false, saveTimer: null, saving: Promise.resolve(), picker: null, plan: null, drag: null, batch: null };
 const uid = () => Math.random().toString(36).slice(2, 10);
 const allPresets = (set) => set.songs.flatMap((song) => song.presets);
 const el = (tag, cls, text) => {
@@ -384,22 +384,33 @@ $("#picker-file").onchange = async (e) => {
 };
 
 // ---------- load onto pedal ----------
-function openLoadDialog() {
-  const set = currentSet();
-  const n = allPresets(set).length;
-  $("#load-title").textContent = `Load "${set.name || "Untitled set"}" onto the pedal`;
+// batch = { name, presets } loads presets from a file (Files > Import presets > Save all) instead of the current set.
+function openLoadDialog(batch = null) {
+  sets.batch = batch;
+  const set = batch ? null : currentSet();
+  const n = loadPresets().length;
+  $("#load-title").textContent = batch ? `Save all ${n} presets from "${batch.name}" to the pedal`
+    : `Load "${set.name || "Untitled set"}" onto the pedal`;
   $("#load-start").max = state.pedal?.capacity || 500;
-  $("#load-start").value = set.start || 1;
+  // A file's presets have no home yet: leave the number blank and ask for it.
+  $("#load-start").value = batch ? "" : set.start || 1;
   $("#load-result").textContent = "";
   $("#load-cancel").textContent = "Cancel";
   $("#load-dialog").showModal();
+  if (batch) $("#load-start").focus();
   planLoad();
 }
+const loadPresets = () => (sets.batch ? sets.batch.presets : allPresets(currentSet()));
 
 let planCheck = 0;
 async function planLoad() {
-  const set = currentSet();
-  const presets = allPresets(set);
+  const presets = loadPresets();
+  if (sets.batch && !$("#load-start").value) {
+    $("#load-plan").innerHTML = "";
+    $("#load-go").disabled = true;
+    $("#load-summary").textContent = `Which preset number should the first one go to? They fill ${presets.length} presets in a row from there.`;
+    return;
+  }
   const start = +$("#load-start").value;
   const check = ++planCheck;
   const go = $("#load-go");
@@ -407,7 +418,7 @@ async function planLoad() {
   $("#load-plan").innerHTML = "";
   const capacity = state.pedal?.capacity || 500;
   if (!Number.isInteger(start) || start < 1 || start + presets.length - 1 > capacity) {
-    $("#load-summary").textContent = `This set needs ${presets.length} slots, so it has to start between 1 and ${capacity - presets.length + 1}.`;
+    $("#load-summary").textContent = `${sets.batch ? "These presets need" : "This set needs"} ${presets.length} slots, so it has to start between 1 and ${capacity - presets.length + 1}.`;
     return;
   }
   $("#load-summary").textContent = `Checking presets ${start}–${start + presets.length - 1} on the pedal…`;
@@ -450,7 +461,8 @@ $("#load-start").addEventListener("keydown", (e) => { if (e.key === "Enter") e.p
 // Escape would hide the dialog while presets are still being written; keep it open until the load finishes.
 $("#load-dialog").addEventListener("cancel", (e) => { if (sets.loading) e.preventDefault(); });
 $("#load-go").onclick = async () => {
-  const set = currentSet();
+  const batch = sets.batch;
+  const set = batch ? null : currentSet();
   const { start, presets } = sets.plan;
   const go = $("#load-go");
   go.disabled = true;
@@ -459,25 +471,28 @@ $("#load-go").onclick = async () => {
   $("#load-cancel").disabled = true;
   go.textContent = "Loading…";
   $("#load-result").textContent = `Writing and checking each preset. About ${Math.max(1, Math.round(presets.length * 0.2))} s. Keep the pedal connected.`;
-  const data = await api("/api/sets/load", { set_name: set.name, start, presets });
+  const data = await api("/api/sets/load", { set_name: batch ? batch.name : set.name, start, presets });
   sets.loading = false;
   $("#load-start").disabled = false;
   $("#load-cancel").disabled = false;
   $("#load-cancel").textContent = "Close";
   if (data.ok) {
-    set.start = start;
-    saveSets();
-    const backup = data.backups ? ` Replaced presets are backed up in backups/${data.backups}.` : "";
-    $("#load-result").textContent = `Done: presets ${start}–${start + presets.length - 1} now hold this set.${backup}`;
+    if (set) {
+      set.start = start;
+      saveSets();
+    }
+    const backup = data.backups ? ` Replaced presets are backed up in backups/${data.backups.replace(/^backups\//, "")}.` : "";
+    $("#load-result").textContent = `Done: presets ${start}–${start + presets.length - 1} now hold ${batch ? "these presets" : "this set"}.${backup}`;
   } else {
-    const backup = data.backups ? ` Presets it replaced are backed up in backups/${data.backups}.` : "";
+    const backup = data.backups ? ` Presets it replaced are backed up in backups/${data.backups.replace(/^backups\//, "")}.` : "";
     $("#load-result").textContent = data.message + backup;
   }
   state.pedal = null;
   await loadPedal();
-  renderSets();
+  if (!batch) renderSets();
   await planLoad();
 };
+$("#load-dialog").addEventListener("close", () => { sets.batch = null; });
 
 $("#set-new").onclick = newSet;
 

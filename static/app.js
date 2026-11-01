@@ -512,6 +512,7 @@ async function openSyx(file) {
     return;
   }
   $("#pick-title").textContent = `${file.name} has ${data.presets.length} presets`;
+  $("#pick-save-all").textContent = `Save all ${data.presets.length} to pedal…`;
   pick.presets = data.presets;
   pick.file = file.name;
   pick.genre = null;
@@ -568,6 +569,12 @@ function renderPick() {
   if (!list.children.length) list.innerHTML = `<li class="none">No presets match.</li>`;
 }
 $("#pick-search").oninput = renderPick;
+// Save every preset in the opened file onto the pedal in one go: the set loader asks for the first preset number,
+// shows what each slot holds now, backs up whatever it replaces, then writes them in order.
+$("#pick-save-all").onclick = () => {
+  $("#pick-dialog").close();
+  openLoadDialog({ name: pick.file.replace(/\.(syx|tch)$/i, ""), presets: pick.presets.map(({ name, tags, params }) => ({ name, tags, params })) });
+};
 
 $("#open").onclick = () => { $("#files-menu").open = false; $("#open-file").click(); };
 document.addEventListener("click", (e) => { if (!$("#files-menu").contains(e.target)) $("#files-menu").open = false; });
