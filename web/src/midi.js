@@ -1,5 +1,5 @@
 // Talking to the pedal from the browser over Web MIDI, using the same commands as the Python server's
-// PedalLink (captured from VoiceSupport 2026-09-16; see HANDOFF.md "Protocol").
+// PedalLink (captured from VoiceSupport 2026-09-16; see PROTOCOL.md).
 //
 // Differences from the server, all forced by the browser:
 // - Web MIDI hands messages to a callback, so replies go into a queue and `expect` waits on it.

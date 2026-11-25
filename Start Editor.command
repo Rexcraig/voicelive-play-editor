@@ -25,7 +25,7 @@ if ! .venv/bin/python -c "import rtmidi" >/dev/null 2>&1; then
   if ! { python3 -m venv .venv && .venv/bin/pip install --quiet --disable-pip-version-check python-rtmidi; }; then
     echo
     echo "Setup didn't finish. Check the internet connection and try again,"
-    echo "or send Will a screenshot of this window."
+    echo "or take a screenshot of this window."
     read -r -p "Press Return to close this window."
     exit 1
   fi

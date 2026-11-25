@@ -14,5 +14,5 @@ tools/vs_stdout.txt
 docs/
 web/public/
 
-# Someone else's pedal: never in git
+# Wrangler's local state
 web/.wrangler/
